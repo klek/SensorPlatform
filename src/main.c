@@ -54,11 +54,24 @@
 /* ADC handler declaration */
 ADC_HandleTypeDef    AdcHandle;
 
+// Uart handler declaration
+UART_HandleTypeDef UartHandle;
+
+
 /* Variable used to get converted value */
 __IO uint16_t uhADCxConvertedValue = 0;
 
 /* Private function prototypes -----------------------------------------------*/
+/* Private function prototypes -----------------------------------------------*/
+#ifdef __GNUC__
+/* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
+   set to 'Yes') calls __io_putchar() */
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif /* __GNUC__ */
 void SystemClock_Config(void);
+void uartSetup(void);
 static void Error_Handler(void);
 static void CPU_CACHE_Enable(void);
 
@@ -95,6 +108,13 @@ int main(void)
 
   /* Configure the system clock to 216 MHz */
   SystemClock_Config();
+
+  /*
+   * Setup UART-debugging with serial console
+   */
+  uartSetup();
+
+
 
   /*##-1- Configure the ADC peripheral #######################################*/
   AdcHandle.Instance          = ADCx;
@@ -141,6 +161,8 @@ int main(void)
     /* Start Conversation Error */
     Error_Handler();
   }
+
+  printf("\n\r Is this working here??\n\r");
 
   /* Infinite loop */
   while (1)
@@ -209,6 +231,42 @@ void SystemClock_Config(void)
     while(1) {};
   }
 }
+
+/*
+ *
+ */
+void uartSetup(void)
+{
+	  /*##-1- Configure the UART peripheral ######################################*/
+	  /* Put the USART peripheral in the Asynchronous mode (UART Mode) */
+	  /* UART configured as follows:
+	      - Word Length = 8 Bits (7 data bit + 1 parity bit) :
+		                  BE CAREFUL : Program 7 data bits + 1 parity bit in PC HyperTerminal
+	      - Stop Bit    = One Stop bit
+	      - Parity      = ODD parity
+	      - BaudRate    = 9600 baud
+	      - Hardware flow control disabled (RTS and CTS signals) */
+	  UartHandle.Instance        = USARTx;
+
+	  UartHandle.Init.BaudRate   = 9600;
+	  UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
+	  UartHandle.Init.StopBits   = UART_STOPBITS_1;
+	  UartHandle.Init.Parity     = UART_PARITY_ODD;
+	  UartHandle.Init.HwFlowCtl  = UART_HWCONTROL_NONE;
+	  UartHandle.Init.Mode       = UART_MODE_TX_RX;
+	  UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
+	  if (HAL_UART_Init(&UartHandle) != HAL_OK)
+	  {
+	    /* Initialization Error */
+	    Error_Handler();
+	  }
+
+	  /* Output a message on Hyperterminal using printf function */
+	  printf("\n\r UART Printf Example: retarget the C library printf function to the UART\n\r");
+	  printf("** Test finished successfully. ** \n\r");
+
+}
+
 /**
   * @brief  This function is executed in case of error occurrence.
   * @param  None
