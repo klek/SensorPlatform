@@ -38,6 +38,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "uartSetup.h"
+
 
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{
@@ -55,7 +57,7 @@
 ADC_HandleTypeDef    AdcHandle;
 
 // Uart handler declaration
-UART_HandleTypeDef UartHandle;
+static UART_HandleTypeDef UartHandle;
 
 
 /* Variable used to get converted value */
@@ -63,15 +65,8 @@ __IO uint16_t uhADCxConvertedValue = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
-#ifdef __GNUC__
-/* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
-   set to 'Yes') calls __io_putchar() */
-#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
-#else
-#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
-#endif /* __GNUC__ */
 void SystemClock_Config(void);
-void uartSetup(void);
+//void uartSetup(void);
 static void Error_Handler(void);
 static void CPU_CACHE_Enable(void);
 
@@ -112,7 +107,7 @@ int main(void)
   /*
    * Setup UART-debugging with serial console
    */
-  uartSetup();
+  uartSetup(&UartHandle);
 
 
 
@@ -134,13 +129,13 @@ int main(void)
 
 
 
-
-
   if (HAL_ADC_Init(&AdcHandle) != HAL_OK)
   {
     /* ADC initialization Error */
     Error_Handler();
   }
+
+  printf("\n Passed handle setup\n");
 
   /*##-2- Configure ADC regular channel ######################################*/
   sConfig.Channel      = ADC_CHANNEL_10;
@@ -154,23 +149,51 @@ int main(void)
     Error_Handler();
   }
 
+  printf("\n\r Passed channel setup\n\r");
+  printf("\n\r Passed channel setup\n\r");
+  printf("\n\r Passed channel setup\n\r");
 
-  /*##-3- Start the conversion process #######################################*/
-  if(HAL_ADC_Start_DMA(&AdcHandle, (uint32_t*)&uhADCxConvertedValue, 1) != HAL_OK)
-  {
-    /* Start Conversation Error */
-    Error_Handler();
+  int n = 0;
+  while ( n < 160 ){
+	  n++;
+	  printf("The loopvalue is %i\n", n);
   }
 
-  printf("\n\r Is this working here??\n\r");
+  /*##-3- Start the conversion process #######################################*/
+//  if(HAL_ADC_Start_DMA(&AdcHandle, (uint32_t*)&uhADCxConvertedValue, 1) != HAL_OK)
+//  {
+    /* Start Conversation Error */
+//    Error_Handler();
+//  }
+
+  // Continuously poll for data on the ADC
+
+  // Start ADC
+  if ( HAL_ADC_Start(&AdcHandle) != HAL_OK )
+  {
+	  // Start error
+	  Error_Handler();
+  }
+
+  printf("\n Is this working here??\n");
+
+//  printf("\n Why dont we reach here?\n");
+
+  // ADC value
+  uint16_t ADCValue = 0;
 
   /* Infinite loop */
   while (1)
   {
+	  if ( HAL_ADC_PollForConversion(&AdcHandle, 1000000) == HAL_OK)
+	  {
+		  ADCValue = HAL_ADC_GetValue(&AdcHandle);
+		  printf("The new ADC-value is %u\n", ADCValue);
+	  }
   }
 }
 
-                                                                           /**
+/**
   * @brief  System Clock Configuration
   *         The system Clock is configured as follow : 
   *            System Clock source            = PLL (HSE)
@@ -232,54 +255,7 @@ void SystemClock_Config(void)
   }
 }
 
-/*
- *
- */
-void uartSetup(void)
-{
-	  /*##-1- Configure the UART peripheral ######################################*/
-	  /* Put the USART peripheral in the Asynchronous mode (UART Mode) */
-	  /* UART configured as follows:
-	      - Word Length = 8 Bits (7 data bit + 1 parity bit) :
-		                  BE CAREFUL : Program 7 data bits + 1 parity bit in PC HyperTerminal
-	      - Stop Bit    = One Stop bit
-	      - Parity      = ODD parity
-	      - BaudRate    = 9600 baud
-	      - Hardware flow control disabled (RTS and CTS signals) */
-	  UartHandle.Instance        = USARTx;
 
-	  UartHandle.Init.BaudRate   = 9600;
-	  UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
-	  UartHandle.Init.StopBits   = UART_STOPBITS_1;
-	  UartHandle.Init.Parity     = UART_PARITY_ODD;
-	  UartHandle.Init.HwFlowCtl  = UART_HWCONTROL_NONE;
-	  UartHandle.Init.Mode       = UART_MODE_TX_RX;
-	  UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
-	  if (HAL_UART_Init(&UartHandle) != HAL_OK)
-	  {
-	    /* Initialization Error */
-	    Error_Handler();
-	  }
-
-	  /* Output a message on Hyperterminal using printf function */
-	  printf("\n\r UART Printf Example: retarget the C library printf function to the UART\n\r");
-	  printf("** Test finished successfully. ** \n\r");
-
-}
-
-/**
-  * @brief  Retargets the C library printf function to the USART.
-  * @param  None
-  * @retval None
-  */
-PUTCHAR_PROTOTYPE
-{
-  /* Place your implementation of fputc here */
-  /* e.g. write a character to the USART3 and Loop until the end of transmission */
-  HAL_UART_Transmit(&UartHandle, (uint8_t *)&ch, 1, 0xFFFF);
-
-  return ch;
-}
 
 /**
   * @brief  This function is executed in case of error occurrence.
