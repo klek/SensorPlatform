@@ -122,7 +122,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
   // Enable peripherals and GPIO Clocks
   // ADC1 Periph clock enable
   ADC_A_CLK_ENABLE();
-  // ADC1 Periph clock enable
+  // ADC2 Periph clock enable
   ADC_B_CLK_ENABLE();
   // Enable GPIO clock
   ADC_A_CHANNEL_GPIO_CLK_ENABLE();

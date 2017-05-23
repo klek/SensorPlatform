@@ -59,6 +59,10 @@
 // Definition for ADC_B's channel
 #define ADC_B_CHANNEL					ADC_CHANNEL_14
 
+// Definition for ADC_B's DMA
+#define ADC_B_DMA_CHANNEL				DMA_CHANNEL_2
+#define ADC_A_DMA_STREAM				DMA2_Stream0
+
 void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB);
 
 
