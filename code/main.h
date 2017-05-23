@@ -73,9 +73,7 @@
 #define ADCx_DMA_IRQHandler             DMA2_Stream0_IRQHandler
 
 // TODO: Add macro for DEBUG, to include UART
-#ifdef LOGGING
-#include "uartSetup.h"
-#endif
+
 
 /* Exported macro ------------------------------------------------------------*/
 

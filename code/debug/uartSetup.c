@@ -7,11 +7,11 @@
 ********************************************************************/
 
 #include "uartSetup.h"
+
 #include "stm32f7xx_hal.h"
 #include "stm32f7xx_nucleo_144.h"
 #include "stm32f7xx_hal_uart.h"
 #include "stdio.h"
-#include "main.h"
 
 
 #ifdef __GNUC__
