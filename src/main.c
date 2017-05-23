@@ -38,8 +38,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "uartSetup.h"
-
+#include "logging.h"
 
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{
@@ -51,13 +50,15 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
+//#define LOGGING
+
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* ADC handler declaration */
 ADC_HandleTypeDef    AdcHandle;
 
 // Uart handler declaration
-static UART_HandleTypeDef UartHandle;
+//static UART_HandleTypeDef UartHandle;
 
 
 /* Variable used to get converted value */
@@ -107,8 +108,9 @@ int main(void)
   /*
    * Setup UART-debugging with serial console
    */
-  uartSetup(&UartHandle);
-
+#ifdef LOGGING
+  uartSetup();
+#endif
 
 
   /*##-1- Configure the ADC peripheral #######################################*/
@@ -135,7 +137,6 @@ int main(void)
     Error_Handler();
   }
 
-  printf("\n Passed handle setup\n");
 
   /*##-2- Configure ADC regular channel ######################################*/
   sConfig.Channel      = ADC_CHANNEL_10;
@@ -148,15 +149,15 @@ int main(void)
     /* Channel Configuration Error */
     Error_Handler();
   }
-
-  printf("\n\r Passed channel setup\n\r");
-  printf("\n\r Passed channel setup\n\r");
-  printf("\n\r Passed channel setup\n\r");
-
+//#ifdef LOGGING
+  LOG("\n\r Passed channel setup\n\r");
+//#endif
   int n = 0;
   while ( n < 160 ){
 	  n++;
-	  printf("The loopvalue is %i\n", n);
+//#ifdef LOGGING
+	  LOG("The loopvalue is %i\n", n);
+//#endif
   }
 
   /*##-3- Start the conversion process #######################################*/
@@ -175,10 +176,6 @@ int main(void)
 	  Error_Handler();
   }
 
-  printf("\n Is this working here??\n");
-
-//  printf("\n Why dont we reach here?\n");
-
   // ADC value
   uint16_t ADCValue = 0;
 
@@ -188,7 +185,7 @@ int main(void)
 	  if ( HAL_ADC_PollForConversion(&AdcHandle, 1000000) == HAL_OK)
 	  {
 		  ADCValue = HAL_ADC_GetValue(&AdcHandle);
-		  printf("The new ADC-value is %u\n", ADCValue);
+		  LOG("The new ADC-value is %u\n", ADCValue);
 	  }
   }
 }

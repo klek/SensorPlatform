@@ -22,10 +22,13 @@
 #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
 #endif /* __GNUC__ */
 
+// Initialize the static UartHandle
+static UART_HandleTypeDef UartHandle;
+
 /*
  *
  */
-void uartSetup(UART_HandleTypeDef* UartHandle)
+void uartSetup(void)
 {
 	  /*##-1- Configure the UART peripheral ######################################*/
 	  /* Put the USART peripheral in the Asynchronous mode (UART Mode) */
@@ -36,16 +39,16 @@ void uartSetup(UART_HandleTypeDef* UartHandle)
 	      - Parity      = ODD parity
 	      - BaudRate    = 9600 baud
 	      - Hardware flow control disabled (RTS and CTS signals) */
-	  UartHandle->Instance        = USARTx;
+	  UartHandle.Instance        = USARTx;
 
-	  UartHandle->Init.BaudRate   = 9600;
-	  UartHandle->Init.WordLength = UART_WORDLENGTH_8B;
-	  UartHandle->Init.StopBits   = UART_STOPBITS_1;
-	  UartHandle->Init.Parity     = UART_PARITY_ODD;
-	  UartHandle->Init.HwFlowCtl  = UART_HWCONTROL_NONE;
-	  UartHandle->Init.Mode       = UART_MODE_TX_RX;
-	  UartHandle->Init.OverSampling = UART_OVERSAMPLING_16;
-	  if (HAL_UART_Init(UartHandle) != HAL_OK)
+	  UartHandle.Init.BaudRate   = 9600;
+	  UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
+	  UartHandle.Init.StopBits   = UART_STOPBITS_1;
+	  UartHandle.Init.Parity     = UART_PARITY_ODD;
+	  UartHandle.Init.HwFlowCtl  = UART_HWCONTROL_NONE;
+	  UartHandle.Init.Mode       = UART_MODE_TX_RX;
+	  UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
+	  if (HAL_UART_Init(&UartHandle) != HAL_OK)
 	  {
 	    /* Initialization Error */
 	    //Error_Handler();
@@ -124,7 +127,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
 }
 
 /**
-  * @brief  Retargets the C library printf function to the USART.
+  * @brief  Retargets the C library printf function to the USART.__io_putchar
   * @param  None
   * @retval None
   */
@@ -132,7 +135,7 @@ PUTCHAR_PROTOTYPE
 {
   /* Place your implementation of fputc here */
   /* e.g. write a character to the USART3 and Loop until the end of transmission */
-  HAL_UART_Transmit(UartHandle, (uint8_t *)&ch, 1, 0xFFFF);
+  HAL_UART_Transmit(&UartHandle, (uint8_t *)&ch, 1, 0xFFFF);
 
   return ch;
 }
