@@ -39,6 +39,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "debug/logging.h"
+#include "adc/adcSetup.h"
 
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{
@@ -54,7 +55,9 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* ADC handler declaration */
-ADC_HandleTypeDef    AdcHandle;
+ADC_HandleTypeDef    Adc1Handle;
+ADC_HandleTypeDef    Adc2Handle;
+
 
 // Uart handler declaration
 //static UART_HandleTypeDef UartHandle;
@@ -79,7 +82,6 @@ static void CPU_CACHE_Enable(void);
   */
 int main(void)
 {
-  ADC_ChannelConfTypeDef sConfig;
 
   /* Enable the CPU Cache */
   CPU_CACHE_Enable();
@@ -112,51 +114,14 @@ int main(void)
 #endif
 
 
-  /*##-1- Configure the ADC peripheral #######################################*/
-  AdcHandle.Instance          = ADCx;
-  
-  AdcHandle.Init.ClockPrescaler        = ADC_CLOCKPRESCALER_PCLK_DIV4;
-  AdcHandle.Init.Resolution            = ADC_RESOLUTION_12B;
-  AdcHandle.Init.ScanConvMode          = DISABLE;                       /* Sequencer disabled (ADC conversion on only 1 channel: channel set on rank 1) */
-  AdcHandle.Init.ContinuousConvMode    = ENABLE;                       /* Continuous mode enabled to have continuous conversion  */
-  AdcHandle.Init.DiscontinuousConvMode = DISABLE;                       /* Parameter discarded because sequencer is disabled */
-  AdcHandle.Init.NbrOfDiscConversion   = 0;
-  AdcHandle.Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE;        /* Conversion start trigged at each external event */
-  AdcHandle.Init.ExternalTrigConv      = ADC_EXTERNALTRIGCONV_T1_CC1;
-  AdcHandle.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
-  AdcHandle.Init.NbrOfConversion       = 1;
-  AdcHandle.Init.DMAContinuousRequests = ENABLE;
-  AdcHandle.Init.EOCSelection          = DISABLE;
+  adcSetup(&Adc1Handle, &Adc2Handle);
 
 
 
-  if (HAL_ADC_Init(&AdcHandle) != HAL_OK)
-  {
-    /* ADC initialization Error */
-    Error_Handler();
-  }
-
-
-  /*##-2- Configure ADC regular channel ######################################*/
-  sConfig.Channel      = ADC_CHANNEL_10;
-  sConfig.Rank         = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-  sConfig.Offset       = 0;
-
-  if (HAL_ADC_ConfigChannel(&AdcHandle, &sConfig) != HAL_OK)
-  {
-    /* Channel Configuration Error */
-    Error_Handler();
-  }
-//#ifdef LOGGING
-  LOG("\n\r Passed channel setup\n\r");
-//#endif
   int n = 0;
   while ( n < 160 ){
 	  n++;
-//#ifdef LOGGING
 	  LOG("The loopvalue is %i\n", n);
-//#endif
   }
 
   /*##-3- Start the conversion process #######################################*/
@@ -169,7 +134,7 @@ int main(void)
   // Continuously poll for data on the ADC
 
   // Start ADC
-  if ( HAL_ADC_Start(&AdcHandle) != HAL_OK )
+  if ( HAL_ADC_Start(&Adc1Handle) != HAL_OK )
   {
 	  // Start error
 	  Error_Handler();
@@ -181,9 +146,9 @@ int main(void)
   /* Infinite loop */
   while (1)
   {
-	  if ( HAL_ADC_PollForConversion(&AdcHandle, 1000000) == HAL_OK)
+	  if ( HAL_ADC_PollForConversion(&Adc1Handle, 1000000) == HAL_OK)
 	  {
-		  ADCValue = HAL_ADC_GetValue(&AdcHandle);
+		  ADCValue = HAL_ADC_GetValue(&Adc1Handle);
 		  LOG("The new ADC-value is %u\n", ADCValue);
 	  }
   }
