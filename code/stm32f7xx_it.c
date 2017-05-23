@@ -38,8 +38,10 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
 #include "stm32f7xx_it.h"
+#include "stm32f7xx_hal.h"
+#include "stm32f7xx_nucleo_144.h"
+
 
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{

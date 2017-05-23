@@ -21,7 +21,7 @@ void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB)
 	// Initializing parameters
 	ADC_ChannelConfTypeDef sConfig;
 
-	/*##-1- Configure the ADC_A peripheral #######################################*/
+	// Configure the ADC_A peripheral
 	adcA->Instance          		 = ADC_A;
 	adcA->Init.ClockPrescaler        = ADC_CLOCKPRESCALER_PCLK_DIV4;
 	adcA->Init.Resolution            = ADC_RESOLUTION_12B;
@@ -35,6 +35,22 @@ void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB)
 	adcA->Init.NbrOfConversion       = 1;
 	adcA->Init.DMAContinuousRequests = ENABLE;
 	adcA->Init.EOCSelection          = DISABLE;
+
+	// Configure the ADC_B peripheral
+	adcB->Instance          		 = ADC_B;
+	adcB->Init.ClockPrescaler        = ADC_CLOCKPRESCALER_PCLK_DIV4;
+	adcB->Init.Resolution            = ADC_RESOLUTION_12B;
+	adcB->Init.ScanConvMode          = DISABLE;                       /* Sequencer disabled (ADC conversion on only 1 channel: channel set on rank 1) */
+	adcB->Init.ContinuousConvMode    = ENABLE;                       /* Continuous mode enabled to have continuous conversion  */
+	adcB->Init.DiscontinuousConvMode = DISABLE;                       /* Parameter discarded because sequencer is disabled */
+	adcB->Init.NbrOfDiscConversion   = 0;
+	adcB->Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE;        /* Conversion start trigged at each external event */
+	adcB->Init.ExternalTrigConv      = ADC_EXTERNALTRIGCONV_T1_CC1;
+	adcB->Init.DataAlign             = ADC_DATAALIGN_RIGHT;
+	adcB->Init.NbrOfConversion       = 1;
+	adcB->Init.DMAContinuousRequests = ENABLE;
+	adcB->Init.EOCSelection          = DISABLE;
+
 
 	if (HAL_ADC_Init(adcA) != HAL_OK)
 	{
@@ -54,9 +70,9 @@ void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB)
 
 
 	/*
-	* Configure ADC_A regular channel
-	*/
-	sConfig.Channel      = ADC_CHANNEL_10;
+	 * Configure ADC_A regular channel
+	 */
+	sConfig.Channel      = ADC_A_CHANNEL;
 	sConfig.Rank         = 1;
 	sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
 	sConfig.Offset       = 0;
@@ -71,9 +87,9 @@ void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB)
 	LOG("Channel setup for ADC_A was successful!\n");
 
 	/*
-	* Configure ADC_B regular channel
-	*/
-	sConfig.Channel      = ADC_CHANNEL_10;
+	 * Configure ADC_B regular channel
+	 */
+	sConfig.Channel      = ADC_B_CHANNEL;
 	sConfig.Rank         = 1;
 	sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
 	sConfig.Offset       = 0;
@@ -103,23 +119,34 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
   GPIO_InitTypeDef          GPIO_InitStruct;
   static DMA_HandleTypeDef  hdma_adc;
 
-  /*##-1- Enable peripherals and GPIO Clocks #################################*/
-  /* ADC1 Periph clock enable */
+  // Enable peripherals and GPIO Clocks
+  // ADC1 Periph clock enable
   ADC_A_CLK_ENABLE();
-  /* Enable GPIO clock ****************************************/
+  // ADC1 Periph clock enable
+  ADC_B_CLK_ENABLE();
+  // Enable GPIO clock
   ADC_A_CHANNEL_GPIO_CLK_ENABLE();
-  /* Enable DMA2 clock */
+  // Enable GPIO clock
+  ADC_B_CHANNEL_GPIO_CLK_ENABLE();
+  // Enable DMA2 clock
   DMA_2_CLK_ENABLE();
 
-  /*##-2- Configure peripheral GPIO ##########################################*/
-  /* ADC Channel GPIO pin configuration */
+  // Configure peripheral GPIO
+  // ADC_A Channel GPIO pin configuration
   GPIO_InitStruct.Pin = ADC_A_CHANNEL_PIN;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(ADC_A_CHANNEL_GPIO_PORT, &GPIO_InitStruct);
 
-  /*##-3- Configure the DMA streams ##########################################*/
-  /* Set the parameters to be configured */
+  // Configure peripheral GPIO
+  // ADC_B Channel GPIO pin configuration
+  GPIO_InitStruct.Pin = ADC_B_CHANNEL_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(ADC_B_CHANNEL_GPIO_PORT, &GPIO_InitStruct);
+
+  // Configure the DMA streams
+  // Set the parameters to be configured
   hdma_adc.Instance = ADC_A_DMA_STREAM;
 
   hdma_adc.Init.Channel  = ADC_A_DMA_CHANNEL;
@@ -137,11 +164,11 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
 
   HAL_DMA_Init(&hdma_adc);
 
-  /* Associate the initialized DMA handle to the ADC handle */
+  // Associate the initialized DMA handle to the ADC handle
   __HAL_LINKDMA(hadc, DMA_Handle, hdma_adc);
 
-  /*##-4- Configure the NVIC for DMA #########################################*/
-  /* NVIC configuration for DMA transfer complete interrupt */
+  // Configure the NVIC for DMA
+  // NVIC configuration for DMA transfer complete interrupt
   HAL_NVIC_SetPriority(ADC_A_DMA_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(ADC_A_DMA_IRQn);
 }
@@ -157,11 +184,15 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
 void HAL_ADC_MspDeInit(ADC_HandleTypeDef *hadc)
 {
 
-  /*##-1- Reset peripherals ##################################################*/
+  // Reset peripherals
   ADC_A_FORCE_RESET();
   ADC_A_RELEASE_RESET();
+  ADC_B_FORCE_RESET();
+  ADC_B_RELEASE_RESET();
 
-  /*##-2- Disable peripherals and GPIO Clocks ################################*/
-  /* De-initialize the ADC Channel GPIO pin */
+  // Disable peripherals and GPIO Clocks
+  // De-initialize the ADC Channel GPIO pin
   HAL_GPIO_DeInit(ADC_A_CHANNEL_GPIO_PORT, ADC_A_CHANNEL_PIN);
+  HAL_GPIO_DeInit(ADC_B_CHANNEL_GPIO_PORT, ADC_B_CHANNEL_PIN);
+
 }

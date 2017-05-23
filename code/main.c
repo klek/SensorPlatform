@@ -37,7 +37,7 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
+//#include "main.h"
 #include "debug/logging.h"
 #include "adc/adcSetup.h"
 
@@ -133,8 +133,15 @@ int main(void)
 
   // Continuously poll for data on the ADC
 
-  // Start ADC
+  // Start ADC_A
   if ( HAL_ADC_Start(&Adc1Handle) != HAL_OK )
+  {
+	  // Start error
+	  Error_Handler();
+  }
+
+  // Start ADC_B
+  if ( HAL_ADC_Start(&Adc2Handle) != HAL_OK )
   {
 	  // Start error
 	  Error_Handler();
@@ -149,8 +156,21 @@ int main(void)
 	  if ( HAL_ADC_PollForConversion(&Adc1Handle, 1000000) == HAL_OK)
 	  {
 		  ADCValue = HAL_ADC_GetValue(&Adc1Handle);
-		  LOG("The new ADC-value is %u\n", ADCValue);
+		  LOG("The new ADC_A-value is %u\t\t", ADCValue);
 	  }
+	  else {
+		  LOG("ERROR ADC_A\n");
+	  }
+
+	  if ( HAL_ADC_PollForConversion(&Adc2Handle, 1000000) == HAL_OK)
+	  {
+		  ADCValue = HAL_ADC_GetValue(&Adc2Handle);
+		  LOG("The new ADC_B-value is %u\n", ADCValue);
+	  }
+	  else {
+		  LOG("ERROR ADC_B\n");
+	  }
+
   }
 }
 
