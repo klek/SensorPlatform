@@ -51,25 +51,38 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
+#define ADC_BUFFER_SIZE 			1024
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* ADC handler declaration */
-ADC_HandleTypeDef    Adc1Handle;
-ADC_HandleTypeDef    Adc2Handle;
+ADC_HandleTypeDef    AdcAHandle;
+ADC_HandleTypeDef    AdcBHandle;
+
+// Defining two global buffers for DMA storage
+uint32_t adcABuffer[ADC_BUFFER_SIZE];
+uint32_t adcBBuffer[ADC_BUFFER_SIZE];
 
 
 // Uart handler declaration
 //static UART_HandleTypeDef UartHandle;
 
+// ADC value
+uint32_t ADCAValue = 0;
+uint32_t ADCBValue = 0;
 
-/* Variable used to get converted value */
-__IO uint16_t uhADCxConvertedValue = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 //void uartSetup(void);
+
+// Note(klek): Added functions by me
+// Interrupthandlers
+//void ADC_IRQHandler(void);
+void DMA2_Stream0_IRQHandler(void);
+void DMA2_Stream1_IRQHandler(void);
+
 static void Error_Handler(void);
 static void CPU_CACHE_Enable(void);
 
@@ -114,7 +127,7 @@ int main(void)
 #endif
 
 
-  adcSetup(&Adc1Handle, &Adc2Handle);
+  adcSetup(&AdcAHandle, &AdcBHandle);
 
 
 
@@ -124,17 +137,26 @@ int main(void)
 	  LOG("The loopvalue is %i\n", n);
   }
 
-  /*##-3- Start the conversion process #######################################*/
-//  if(HAL_ADC_Start_DMA(&AdcHandle, (uint32_t*)&uhADCxConvertedValue, 1) != HAL_OK)
-//  {
-    /* Start Conversation Error */
-//    Error_Handler();
-//  }
+  // Start the conversion process for ADC_A
+  if(HAL_ADC_Start_DMA(&AdcAHandle, adcABuffer, ADC_BUFFER_SIZE) != HAL_OK)
+  {
+	/* Start Conversation Error */
+	//Error_Handler();
+	LOG("ERROR: Failed to start ADC_A with DMA!\n");
+  }
+
+  // Start the conversion process for ADC_B
+  if(HAL_ADC_Start_DMA(&AdcBHandle, adcBBuffer, ADC_BUFFER_SIZE) != HAL_OK)
+  {
+	// Start Conversation Error
+	//Error_Handler();
+	LOG("ERROR: Failed to start ADC_B with DMA!\n");
+  }
 
   // Continuously poll for data on the ADC
 
   // Start ADC_A
-  if ( HAL_ADC_Start(&Adc1Handle) != HAL_OK )
+/*  if ( HAL_ADC_Start(&AdcAHandle) != HAL_OK )
   {
 	  // Start error
 	  Error_Handler();
@@ -142,23 +164,21 @@ int main(void)
   }
 
   // Start ADC_B
-  if ( HAL_ADC_Start(&Adc2Handle) != HAL_OK )
+  if ( HAL_ADC_Start(&AdcAHandle) != HAL_OK )
   {
 	  // Start error
 	  Error_Handler();
 	  LOG("ERROR: Couldn't not properly start ADC_B!\n");
   }
-
-  // ADC value
-  uint16_t ADCValue = 0;
+*/
 
   /* Infinite loop */
   while (1)
   {
-	  if ( HAL_ADC_PollForConversion(&Adc1Handle, 10000) == HAL_OK)
+/*	  if ( HAL_ADC_PollForConversion(&Adc1Handle, 10000) == HAL_OK)
 	  {
-		  ADCValue = HAL_ADC_GetValue(&Adc1Handle);
-		  LOG("The new ADC_A-value is %u\t\t", ADCValue);
+		  ADCAValue = HAL_ADC_GetValue(&Adc1Handle);
+		  LOG("The new ADC_A-value is %u\t\t", ADCAValue);
 	  }
 	  else {
 		  LOG("ERROR: Timeout reached for ADC_A\n");
@@ -166,13 +186,16 @@ int main(void)
 
 	  if ( HAL_ADC_PollForConversion(&Adc2Handle, 10000) == HAL_OK)
 	  {
-		  ADCValue = HAL_ADC_GetValue(&Adc2Handle);
-		  LOG("The new ADC_B-value is %u\n", ADCValue);
+		  ADCBValue = HAL_ADC_GetValue(&Adc2Handle);
+		  LOG("The new ADC_B-value is %u\n", ADCBValue);
 	  }
 	  else {
 		  LOG("ERROR: Timeout reached for ADC_B\n");
 	  }
-
+*/
+	  // Print the ADCXValues
+	  LOG("The current ADC_A-value is %u\t\t", ADCAValue);
+	  LOG("The current ADC_B-value is %u\n", ADCBValue);
   }
 }
 
@@ -239,6 +262,29 @@ void SystemClock_Config(void)
 }
 
 
+/*
+ * This function handles interrupts for the ADC1, ADC2 and ADC3
+ */
+/*void ADC_IRQHandler(void)
+{
+	HAL_ADC_IRQHandler(&AdcAHandle);
+}*/
+
+/*
+ * This function handles interrupts for the DMA2 Stream0
+ */
+void DMA2_Stream0_IRQHandler(void)
+{
+	HAL_DMA_IRQHandler(AdcAHandle.DMA_Handle);
+}
+
+/*
+ * This function handles interrupts for the DMA2 Stream0
+ */
+void DMA2_Stream1_IRQHandler(void)
+{
+	HAL_DMA_IRQHandler(AdcBHandle.DMA_Handle);
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
@@ -263,8 +309,24 @@ static void Error_Handler(void)
   */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
 {
-  /* Turn LED1 on: Transfer process is correct */
-  BSP_LED_On(LED1);
+	/*
+	 * We need to find out which ADC gave the interrupt
+	 */
+	if ( AdcHandle->Instance == ADC_A ) {
+		// Copy data
+		//ADCAValue = accumulate(adcABuffer, adcABuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
+		ADCAValue = adcABuffer[4];
+	}
+	else if ( AdcHandle->Instance == ADC_B ) {
+		// Copy data
+		//ADCBValue = accumulate(adcBBuffer, adcBBuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
+		ADCBValue = adcBBuffer[4];
+	}
+	else {
+		// What now?
+	}
+	/* Turn LED1 on: Transfer process is correct */
+	BSP_LED_On(LED1);
 }
 
 #ifdef  USE_FULL_ASSERT

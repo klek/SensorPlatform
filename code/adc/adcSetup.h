@@ -61,11 +61,11 @@
 
 // Definition for ADC_B's DMA
 #define ADC_B_DMA_CHANNEL				DMA_CHANNEL_2
-#define ADC_B_DMA_STREAM				DMA2_Stream0
+#define ADC_B_DMA_STREAM				DMA2_Stream1
 
 // Definition for ADC_B's NVIC
-#define ADC_B_DMA_IRQn					DMA2_Stream0_IRQn
-#define ADC_B_DMA_IRQHandler			DMA2_Stream0_IRQHandler
+#define ADC_B_DMA_IRQn					DMA2_Stream1_IRQn
+#define ADC_B_DMA_IRQHandler			DMA2_Stream1_IRQHandler
 
 void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB);
 
