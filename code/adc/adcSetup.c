@@ -114,7 +114,7 @@ void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB)
   * @param hadc: ADC handle pointer
   * @retval None
   */
-void HAL_ADC_A_MspInit(ADC_HandleTypeDef *hadc)
+void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
 {
 	GPIO_InitTypeDef          GPIO_InitStruct;
 	static DMA_HandleTypeDef  hdma_adcA;
