@@ -55,14 +55,14 @@ void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB)
 	if (HAL_ADC_Init(adcA) != HAL_OK)
 	{
 		/* ADC initialization Error */
-		LOG("Init of ADC_A failed!\n");
+		LOG("ERROR: Init of ADC_A failed!\n");
 		//while(1);
 	}
 
 	if (HAL_ADC_Init(adcB) != HAL_OK)
 	{
 		/* ADC initialization Error */
-		LOG("Init of ADC_B failed!\n");
+		LOG("ERROR: Init of ADC_B failed!\n");
 		//while(1);
 	}
 
@@ -80,7 +80,7 @@ void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB)
 	if (HAL_ADC_ConfigChannel(adcA, &sConfig) != HAL_OK)
 	{
 		/* Channel Configuration Error */
-		LOG("ADC_A channel configuration failed!\n");
+		LOG("ERROR: ADC_A channel configuration failed!\n");
 		//while(1);
 	}
 
@@ -97,7 +97,7 @@ void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB)
 	if (HAL_ADC_ConfigChannel(adcB, &sConfig) != HAL_OK)
 	{
 		/* Channel Configuration Error */
-		LOG("ADC_A channel configuration failed!\n");
+		LOG("ERROR: ADC_A channel configuration failed!\n");
 		//while(1);
 	}
 
@@ -122,9 +122,9 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
 
 
 	/*
-	* So we have 2 cases here. We either come here with ADC_A or ADC_B
-	* We need to find out which one
-	*/
+	 * So we have 2 cases here. We either come here with ADC_A or ADC_B
+	 * We need to find out which one
+	 */
 	// Enable DMA2 clock which is same for both cases
 	DMA_2_CLK_ENABLE();
 
@@ -232,15 +232,15 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
 void HAL_ADC_MspDeInit(ADC_HandleTypeDef *hadc)
 {
 
-  // Reset peripherals
-  ADC_A_FORCE_RESET();
-  ADC_A_RELEASE_RESET();
-  ADC_B_FORCE_RESET();
-  ADC_B_RELEASE_RESET();
+	// Reset peripherals
+	ADC_A_FORCE_RESET();
+	ADC_A_RELEASE_RESET();
+	ADC_B_FORCE_RESET();
+	ADC_B_RELEASE_RESET();
 
-  // Disable peripherals and GPIO Clocks
-  // De-initialize the ADC Channel GPIO pin
-  HAL_GPIO_DeInit(ADC_A_CHANNEL_GPIO_PORT, ADC_A_CHANNEL_PIN);
-  HAL_GPIO_DeInit(ADC_B_CHANNEL_GPIO_PORT, ADC_B_CHANNEL_PIN);
+	// Disable peripherals and GPIO Clocks
+	// De-initialize the ADC Channel GPIO pin
+	HAL_GPIO_DeInit(ADC_A_CHANNEL_GPIO_PORT, ADC_A_CHANNEL_PIN);
+	HAL_GPIO_DeInit(ADC_B_CHANNEL_GPIO_PORT, ADC_B_CHANNEL_PIN);
 
 }

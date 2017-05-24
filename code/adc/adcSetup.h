@@ -68,6 +68,7 @@
 #define ADC_B_DMA_IRQHandler			DMA2_Stream1_IRQHandler
 
 void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB);
-
+void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc);
+void HAL_ADC_MspDeInit(ADC_HandleTypeDef *hadc);
 
 #endif

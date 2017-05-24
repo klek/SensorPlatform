@@ -63,11 +63,8 @@ ADC_HandleTypeDef    AdcBHandle;
 uint32_t adcABuffer[ADC_BUFFER_SIZE];
 uint32_t adcBBuffer[ADC_BUFFER_SIZE];
 
-
-// Uart handler declaration
-//static UART_HandleTypeDef UartHandle;
-
 // ADC value
+// Note(klek): These can most likely be moved into main-scope
 uint32_t ADCAValue = 0;
 uint32_t ADCBValue = 0;
 
@@ -75,14 +72,14 @@ uint32_t ADCBValue = 0;
 /* Private function prototypes -----------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-//void uartSetup(void);
 
 // Note(klek): Added functions by me
-// Interrupthandlers
+// Interrupt handlers
 //void ADC_IRQHandler(void);
 void DMA2_Stream0_IRQHandler(void);
 void DMA2_Stream1_IRQHandler(void);
 
+// Static functions
 static void Error_Handler(void);
 static void CPU_CACHE_Enable(void);
 
@@ -96,107 +93,103 @@ static void CPU_CACHE_Enable(void);
 int main(void)
 {
 
-  /* Enable the CPU Cache */
-  CPU_CACHE_Enable();
+	/*
+	 * Enable the CPU Cache
+	 */
+	CPU_CACHE_Enable();
 
-  /* STM32F7xx HAL library initialization:
-       - Configure the Flash prefetch
-       - Systick timer is configured by default as source of time base, but user 
-         can eventually implement his proper time base source (a general purpose 
-         timer for example or other time source), keeping in mind that Time base 
-         duration should be kept 1ms since PPP_TIMEOUT_VALUEs are defined and 
-         handled in milliseconds basis.
-       - Set NVIC Group Priority to 4
-       - Low Level Initialization
-     */
-  HAL_Init();
-
-
-  /* Configure LED1 and LED3 */
-  BSP_LED_Init(LED1);
-  BSP_LED_Init(LED3);
-
-  /* Configure the system clock to 216 MHz */
-  SystemClock_Config();
-
-  /*
-   * Setup UART-debugging with serial console
-   */
-#ifdef LOGGING
-  uartSetup();
-#endif
+	/* STM32F7xx HAL library initialization:
+	   - Configure the Flash prefetch
+	   - Systick timer is configured by default as source of time base, but user
+		 can eventually implement his proper time base source (a general purpose
+		 timer for example or other time source), keeping in mind that Time base
+		 duration should be kept 1ms since PPP_TIMEOUT_VALUEs are defined and
+		 handled in milliseconds basis.
+	   - Set NVIC Group Priority to 4
+	   - Low Level Initialization
+	 */
+	HAL_Init();
 
 
-  adcSetup(&AdcAHandle, &AdcBHandle);
+	/*
+	 * Configure LED1 and LED3
+	 */
+	BSP_LED_Init(LED1);
+	BSP_LED_Init(LED3);
+
+	/*
+	 * Configure the system clock to 216 MHz
+	 */
+	SystemClock_Config();
+
+	#ifdef LOGGING
+	/*
+	* Setup UART-debugging with serial console
+	*/
+	uartSetup();
+	#endif
+
+	/*
+	 * Setup the two ADCs
+	 */
+	adcSetup(&AdcAHandle, &AdcBHandle);
 
 
 
-  int n = 0;
-  while ( n < 160 ){
-	  n++;
-	  LOG("The loopvalue is %i\n", n);
-  }
+	int n = 0;
+	while ( n < 160 ){
+		n++;
+		LOG("The loopvalue is %i\n", n);
+	}
 
-  // Start the conversion process for ADC_A
-  if(HAL_ADC_Start_DMA(&AdcAHandle, adcABuffer, ADC_BUFFER_SIZE) != HAL_OK)
-  {
-	/* Start Conversation Error */
-	//Error_Handler();
-	LOG("ERROR: Failed to start ADC_A with DMA!\n");
-  }
+	/*
+	 * Start both of the ADCs with associated buffers
+	 */
+	// Start the conversion process for ADC_A
+	if(HAL_ADC_Start_DMA(&AdcAHandle, adcABuffer, ADC_BUFFER_SIZE) != HAL_OK)
+	{
+		LOG("ERROR: Failed to start ADC_A with DMA!\n");
+	}
 
-  // Start the conversion process for ADC_B
-  if(HAL_ADC_Start_DMA(&AdcBHandle, adcBBuffer, ADC_BUFFER_SIZE) != HAL_OK)
-  {
-	// Start Conversation Error
-	//Error_Handler();
-	LOG("ERROR: Failed to start ADC_B with DMA!\n");
-  }
+	// Start the conversion process for ADC_B
+	if(HAL_ADC_Start_DMA(&AdcBHandle, adcBBuffer, ADC_BUFFER_SIZE) != HAL_OK)
+	{
+		LOG("ERROR: Failed to start ADC_B with DMA!\n");
+	}
 
-  // Continuously poll for data on the ADC
+	/*
+	 * Note(klek): 	ADC_A will be ahead of ADC_B here already, cause of serial startup
+	 * 				Can we fix this somehow? Like resetting the buffers in some way
+	 */
 
-  // Start ADC_A
-/*  if ( HAL_ADC_Start(&AdcAHandle) != HAL_OK )
-  {
-	  // Start error
-	  Error_Handler();
-	  LOG("ERROR: Couldn't not properly start ADC_A!\n");
-  }
+	/*
+	 * Note(klek): 	More initialization needed?
+	 */
 
-  // Start ADC_B
-  if ( HAL_ADC_Start(&AdcAHandle) != HAL_OK )
-  {
-	  // Start error
-	  Error_Handler();
-	  LOG("ERROR: Couldn't not properly start ADC_B!\n");
-  }
-*/
+	/*
+	 * Main program loop
+	 */
+	while (1)
+	{
+		/*
+		 * Note(klek):	Where should data be moved? IRQ not that great probably
+		 * 				Should it be done here then, in the main-loop?
+		 */
 
-  /* Infinite loop */
-  while (1)
-  {
-/*	  if ( HAL_ADC_PollForConversion(&Adc1Handle, 10000) == HAL_OK)
-	  {
-		  ADCAValue = HAL_ADC_GetValue(&Adc1Handle);
-		  LOG("The new ADC_A-value is %u\t\t", ADCAValue);
-	  }
-	  else {
-		  LOG("ERROR: Timeout reached for ADC_A\n");
-	  }
-
-	  if ( HAL_ADC_PollForConversion(&Adc2Handle, 10000) == HAL_OK)
-	  {
-		  ADCBValue = HAL_ADC_GetValue(&Adc2Handle);
-		  LOG("The new ADC_B-value is %u\n", ADCBValue);
-	  }
-	  else {
-		  LOG("ERROR: Timeout reached for ADC_B\n");
-	  }
-*/
-	  // Print the ADCXValues
-	  LOG("The current ADC_A-value is %u\t\t", ADCAValue);
-	  LOG("The current ADC_B-value is %u\n", ADCBValue);
-  }
+		/*
+		 * Note(klek):	The flow processing flow should be as follows after
+		 * 				interrupts have occured.
+		 *
+		 * 				Data should be moved from DMA-buffers
+		 * 				Data should be pre-processed before being saved elsewhere
+		 * 				Pre-processing includes filtering and decimation of the data
+		 * 				After filtering and decimation of the data, we can start processing it
+		 * 				by doing arctangent calculation and also follow that up with FFT
+		 */
+		// Print the ADCXValues
+		LOG("The current ADC_A-value is %lu\t\t", ADCAValue);
+		LOG("The current ADC_B-value is %lu\n", ADCBValue);
+	}
 }
 
 /**
@@ -324,6 +317,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
 	}
 	else {
 		// What now?
+		// Turn LED3 on, to indicate something went wrong
+		BSP_LED_On(LED3);
 	}
 	/* Turn LED1 on: Transfer process is correct */
 	BSP_LED_On(LED1);

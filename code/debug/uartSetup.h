@@ -33,5 +33,7 @@
 // Macro the printf-function
 
 void uartSetup(void);
+void HAL_UART_MspInit(UART_HandleTypeDef *huart);
+void HAL_UART_MspDeInit(UART_HandleTypeDef *huart);
 
 #endif
