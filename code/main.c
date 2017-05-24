@@ -138,6 +138,7 @@ int main(void)
   {
 	  // Start error
 	  Error_Handler();
+	  LOG("ERROR: Couldn't not properly start ADC_A!\n");
   }
 
   // Start ADC_B
@@ -145,6 +146,7 @@ int main(void)
   {
 	  // Start error
 	  Error_Handler();
+	  LOG("ERROR: Couldn't not properly start ADC_B!\n");
   }
 
   // ADC value
@@ -153,22 +155,22 @@ int main(void)
   /* Infinite loop */
   while (1)
   {
-	  if ( HAL_ADC_PollForConversion(&Adc1Handle, 1000000) == HAL_OK)
+	  if ( HAL_ADC_PollForConversion(&Adc1Handle, 10000) == HAL_OK)
 	  {
 		  ADCValue = HAL_ADC_GetValue(&Adc1Handle);
 		  LOG("The new ADC_A-value is %u\t\t", ADCValue);
 	  }
 	  else {
-		  LOG("ERROR ADC_A\n");
+		  LOG("ERROR: Timeout reached for ADC_A\n");
 	  }
 
-	  if ( HAL_ADC_PollForConversion(&Adc2Handle, 1000000) == HAL_OK)
+	  if ( HAL_ADC_PollForConversion(&Adc2Handle, 10000) == HAL_OK)
 	  {
 		  ADCValue = HAL_ADC_GetValue(&Adc2Handle);
 		  LOG("The new ADC_B-value is %u\n", ADCValue);
 	  }
 	  else {
-		  LOG("ERROR ADC_B\n");
+		  LOG("ERROR: Timeout reached for ADC_B\n");
 	  }
 
   }
