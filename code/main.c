@@ -40,6 +40,7 @@
 //#include "main.h"
 #include "debug/logging.h"
 #include "adc/adcSetup.h"
+#include "maths/processing.h"
 
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{
@@ -122,12 +123,12 @@ int main(void)
 	 */
 	SystemClock_Config();
 
-	#ifdef LOGGING
+#ifdef LOGGING
 	/*
 	* Setup UART-debugging with serial console
 	*/
 	uartSetup();
-	#endif
+#endif
 
 	/*
 	 * Setup the two ADCs
