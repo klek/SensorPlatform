@@ -61,13 +61,15 @@ ADC_HandleTypeDef    AdcAHandle;
 ADC_HandleTypeDef    AdcBHandle;
 
 // Defining two global buffers for DMA storage
-uint32_t adcABuffer[ADC_BUFFER_SIZE];
+uint32_t adcBuffer[ADC_BUFFER_SIZE];
 uint32_t adcBBuffer[ADC_BUFFER_SIZE];
 
 // ADC value
 // Note(klek): These can most likely be moved into main-scope
 uint32_t ADCAValue = 0;
 uint32_t ADCBValue = 0;
+
+uint32_t interrupted = 0;
 
 
 /* Private function prototypes -----------------------------------------------*/
@@ -78,7 +80,7 @@ void SystemClock_Config(void);
 // Interrupt handlers
 //void ADC_IRQHandler(void);
 void DMA2_Stream0_IRQHandler(void);
-void DMA2_Stream3_IRQHandler(void);
+//void DMA2_Stream3_IRQHandler(void);
 
 // Static functions
 static void Error_Handler(void);
@@ -146,6 +148,12 @@ int main(void)
 	/*
 	 * Start both of the ADCs with associated buffers
 	 */
+	// Start the conversion process for DUAL-mode interleaved ADCs
+	if ( adcStart(&AdcAHandle, &AdcBHandle, adcBuffer, ADC_BUFFER_SIZE) != HAL_OK )
+	{
+		LOG("ERROR: Failed to start DUAL-mode interleaved conversion!\n");
+	}
+/*
 	// Start the conversion process for ADC_A
 	if(HAL_ADC_Start_DMA(&AdcAHandle, adcABuffer, ADC_BUFFER_SIZE) != HAL_OK)
 	{
@@ -157,7 +165,7 @@ int main(void)
 	{
 		LOG("ERROR: Failed to start ADC_B with DMA!\n");
 	}
-
+*/
 	/*
 	 * Note(klek): 	ADC_A will be ahead of ADC_B here already, cause of serial startup
 	 * 				Can we fix this somehow? Like resetting the buffers in some way
@@ -193,8 +201,10 @@ int main(void)
 		 * 				by doing arctangent calculation and also follow that up with FFT
 		 */
 		// Print the ADCXValues
-		LOG("The current ADC_A-value is %lu\t\t", ADCAValue);
-		LOG("The current ADC_B-value is %lu\n", ADCBValue);
+		LOG("The current ADC_A-value is %lu\t\t", (ADCAValue & 0xFFFF) );
+		LOG("The current ADC_B-value is %lu\n", ( (ADCAValue & 0xFFFF0000) >> 16 ) );
+		LOG("We reached interrupt routine %lu times since last\n", interrupted);
+		interrupted = 0;
 	}
 }
 
@@ -280,10 +290,10 @@ void DMA2_Stream0_IRQHandler(void)
 /*
  * This function handles interrupts for the DMA2 Stream0
  */
-void DMA2_Stream3_IRQHandler(void)
-{
-	HAL_DMA_IRQHandler(AdcBHandle.DMA_Handle);
-}
+//void DMA2_Stream3_IRQHandler(void)
+//{
+//	HAL_DMA_IRQHandler(AdcBHandle.DMA_Handle);
+//}
 
 /**
   * @brief  This function is executed in case of error occurrence.
@@ -314,12 +324,16 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
 	if ( AdcHandle->Instance == ADC_A ) {
 		// Copy data
 		//ADCAValue = accumulate(adcABuffer, adcABuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
-		ADCAValue = adcABuffer[4];
+		ADCAValue = adcBuffer[4];
+
+		// Set status bit
+		interrupted++;
 	}
 	else if ( AdcHandle->Instance == ADC_B ) {
 		// Copy data
 		//ADCBValue = accumulate(adcBBuffer, adcBBuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
-		ADCBValue = adcBBuffer[4];
+//		ADCBValue = adcBBuffer[4];
+		LOG("BUG: Why did this happen??\n");
 	}
 	else {
 		// What now?
@@ -329,6 +343,42 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
 	/* Turn LED1 on: Transfer process is correct */
 	BSP_LED_On(LED1);
 }
+
+/**
+  * @brief  Conversion complete callback in non blocking mode
+  * @param  AdcHandle : AdcHandle handle
+  * @note   This example shows a simple way to report end of conversion, and
+  *         you can add your own implementation.
+  * @retval None
+  */
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* AdcHandle)
+{
+	/*
+	 * We need to find out which ADC gave the interrupt
+	 */
+	if ( AdcHandle->Instance == ADC_A ) {
+		// Copy data
+		//ADCAValue = accumulate(adcABuffer, adcABuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
+		ADCAValue = adcBuffer[4];
+
+		// Set status bit
+		interrupted++;
+	}
+	else if ( AdcHandle->Instance == ADC_B ) {
+		// Copy data
+		//ADCBValue = accumulate(adcBBuffer, adcBBuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
+//		ADCBValue = adcBBuffer[4];
+		LOG("BUG: Why did this happen??\n");
+	}
+	else {
+		// What now?
+		// Turn LED3 on, to indicate something went wrong
+		BSP_LED_On(LED3);
+	}
+	/* Turn LED1 on: Transfer process is correct */
+	BSP_LED_On(LED1);
+}
+
 
 #ifdef  USE_FULL_ASSERT
 

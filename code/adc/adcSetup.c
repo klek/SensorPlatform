@@ -21,9 +21,11 @@ void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB)
 	// Initializing parameters
 	ADC_ChannelConfTypeDef sConfig;
 
+	ADC_MultiModeTypeDef multiModeConfig;
+
 	// Configure the ADC_A peripheral
 	adcA->Instance          		 = ADC_A;
-	adcA->Init.ClockPrescaler        = ADC_CLOCKPRESCALER_PCLK_DIV4;
+	adcA->Init.ClockPrescaler        = ADC_CLOCKPRESCALER_PCLK_DIV2;
 	adcA->Init.Resolution            = ADC_RESOLUTION_12B;
 	adcA->Init.ScanConvMode          = DISABLE;                       /* Sequencer disabled (ADC conversion on only 1 channel: channel set on rank 1) */
 	adcA->Init.ContinuousConvMode    = ENABLE;                       /* Continuous mode enabled to have continuous conversion  */
@@ -74,10 +76,10 @@ void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB)
 	 */
 	sConfig.Channel      = ADC_A_CHANNEL;
 	sConfig.Rank         = 1;
-	sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+	sConfig.SamplingTime = ADC_SAMPLING_TIME;
 	sConfig.Offset       = 0;
 
-	if (HAL_ADC_ConfigChannel(adcA, &sConfig) != HAL_OK)
+	if ( HAL_ADC_ConfigChannel(adcA, &sConfig) != HAL_OK)
 	{
 		/* Channel Configuration Error */
 		LOG("ERROR: ADC_A channel configuration failed!\n");
@@ -91,10 +93,10 @@ void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB)
 	 */
 	sConfig.Channel      = ADC_B_CHANNEL;
 	sConfig.Rank         = 1;
-	sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+	sConfig.SamplingTime = ADC_SAMPLING_TIME;
 	sConfig.Offset       = 0;
 
-	if (HAL_ADC_ConfigChannel(adcB, &sConfig) != HAL_OK)
+	if ( HAL_ADC_ConfigChannel(adcB, &sConfig) != HAL_OK)
 	{
 		/* Channel Configuration Error */
 		LOG("ERROR: ADC_A channel configuration failed!\n");
@@ -103,8 +105,35 @@ void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB)
 
 	LOG("Channel setup for ADC_B was successful!\n");
 
+	/*
+	 * Configure DUAL-mode interleaved
+	 */
+	multiModeConfig.Mode				= ADC_DUALMODE_REGSIMULT;
+	multiModeConfig.DMAAccessMode		= ADC_DMAACCESSMODE_2;
+	multiModeConfig.TwoSamplingDelay	= ADC_TWOSAMPLINGDELAY_5CYCLES;
+
+	if ( HAL_ADCEx_MultiModeConfigChannel(adcA, &multiModeConfig) != HAL_OK )
+	{
+		LOG("ERROR: Failed to set multimode config!\n");
+	}
 }
 
+HAL_StatusTypeDef adcStart(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB, uint32_t* data, uint32_t len)
+{
+	// Enable ADC_B
+	if ( HAL_ADC_Start(adcB) != HAL_OK )
+	{
+		return HAL_ERROR;
+	}
+
+	// Enable ADC_A as master for DUAL-mode interleaved DMA with double buffering
+	if ( HAL_ADCEx_MultiModeStart_DMA(adcA, data, len) != HAL_OK )
+	{
+		return HAL_ERROR;
+	}
+
+	return HAL_OK;
+}
 
 /**
   * @brief ADC MSP Initialization
@@ -137,27 +166,27 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
 
 		// Configure peripheral GPIO
 		// ADC_A Channel GPIO pin configuration
-		GPIO_InitStruct.Pin = ADC_A_CHANNEL_PIN;
-		GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-		GPIO_InitStruct.Pull = GPIO_NOPULL;
+		GPIO_InitStruct.Pin 				= ADC_A_CHANNEL_PIN;
+		GPIO_InitStruct.Mode 				= GPIO_MODE_ANALOG;
+		GPIO_InitStruct.Pull 				= GPIO_NOPULL;
 		HAL_GPIO_Init(ADC_A_CHANNEL_GPIO_PORT, &GPIO_InitStruct);
 
 		// Configure the DMA streams
 		// Set the parameters to be configured
-		hdma_adcA.Instance = ADC_A_DMA_STREAM;
+		hdma_adcA.Instance 					= ADC_A_DMA_STREAM;
 
-		hdma_adcA.Init.Channel  = ADC_A_DMA_CHANNEL;
-		hdma_adcA.Init.Direction = DMA_PERIPH_TO_MEMORY;
-		hdma_adcA.Init.PeriphInc = DMA_PINC_DISABLE;
-		hdma_adcA.Init.MemInc = DMA_MINC_ENABLE;
-		hdma_adcA.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
-		hdma_adcA.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
-		hdma_adcA.Init.Mode = DMA_CIRCULAR;
-		hdma_adcA.Init.Priority = DMA_PRIORITY_HIGH;
-		hdma_adcA.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
-		hdma_adcA.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_HALFFULL;
-		hdma_adcA.Init.MemBurst = DMA_MBURST_SINGLE;
-		hdma_adcA.Init.PeriphBurst = DMA_PBURST_SINGLE;
+		hdma_adcA.Init.Channel  			= ADC_A_DMA_CHANNEL;
+		hdma_adcA.Init.Direction 			= DMA_PERIPH_TO_MEMORY;
+		hdma_adcA.Init.PeriphInc 			= DMA_PINC_DISABLE;
+		hdma_adcA.Init.MemInc 				= DMA_MINC_ENABLE;
+		hdma_adcA.Init.PeriphDataAlignment 	= DMA_PDATAALIGN_WORD;
+		hdma_adcA.Init.MemDataAlignment 	= DMA_MDATAALIGN_WORD;
+		hdma_adcA.Init.Mode 				= DMA_CIRCULAR;
+		hdma_adcA.Init.Priority 			= DMA_PRIORITY_HIGH;
+		hdma_adcA.Init.FIFOMode 			= DMA_FIFOMODE_DISABLE;
+		hdma_adcA.Init.FIFOThreshold 		= DMA_FIFO_THRESHOLD_HALFFULL;
+		hdma_adcA.Init.MemBurst 			= DMA_MBURST_SINGLE;
+		hdma_adcA.Init.PeriphBurst 			= DMA_PBURST_SINGLE;
 
 		HAL_DMA_Init(&hdma_adcA);
 
@@ -185,7 +214,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
 
 		// Configure the DMA streams
 		// Set the parameters to be configured
-		hdma_adcB.Instance = ADC_B_DMA_STREAM;
+/*		hdma_adcB.Instance = ADC_B_DMA_STREAM;
 
 		hdma_adcB.Init.Channel  = ADC_B_DMA_CHANNEL;
 		hdma_adcB.Init.Direction = DMA_PERIPH_TO_MEMORY;
@@ -209,7 +238,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
 		// NVIC configuration for DMA transfer complete interrupt
 		HAL_NVIC_SetPriority(ADC_B_DMA_IRQn, 0, 0);
 		HAL_NVIC_EnableIRQ(ADC_B_DMA_IRQn);
-
+*/
 	}
 	else
 	{

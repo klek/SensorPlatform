@@ -12,6 +12,10 @@
 #include "stm32f7xx_hal.h"
 #include "stm32f7xx_nucleo_144.h"
 
+/*
+ * Common defines for the ADCs
+ */
+#define ADC_SAMPLING_TIME				ADC_SAMPLETIME_56CYCLES
 
 /*
  * Definition for ADC_A clock resources
@@ -69,6 +73,7 @@
 #define ADC_B_DMA_IRQHandler			DMA2_Stream3_IRQHandler
 
 void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB);
+HAL_StatusTypeDef adcStart(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB, uint32_t* data, uint32_t len);
 void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc);
 void HAL_ADC_MspDeInit(ADC_HandleTypeDef *hadc);
 
