@@ -166,6 +166,11 @@ int main(void)
 	/*
 	 * Note(klek): 	More initialization needed?
 	 */
+	// Init the fft module
+/*	if (fftInit() != ARM_MATH_SUCCESS ) {
+		LOG("Error: Couldn't initialize the fft module!\n");
+	}
+*/
 
 	/*
 	 * Main program loop
