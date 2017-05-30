@@ -17,7 +17,7 @@
 #define FFT_INVERSE_FLAG			0				// We are doing forward transform
 
 // Prototypes
-arm_status fftInit(void);
+arm_status fftProcess(float32_t* data);
 arm_status filterIncData(void);
 
 
