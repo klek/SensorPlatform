@@ -52,7 +52,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define ADC_BUFFER_SIZE 			1024
+#define ADC_BUFFER_SIZE 			2048
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -78,7 +78,7 @@ void SystemClock_Config(void);
 // Interrupt handlers
 //void ADC_IRQHandler(void);
 void DMA2_Stream0_IRQHandler(void);
-void DMA2_Stream1_IRQHandler(void);
+void DMA2_Stream3_IRQHandler(void);
 
 // Static functions
 static void Error_Handler(void);
@@ -167,10 +167,10 @@ int main(void)
 	 * Note(klek): 	More initialization needed?
 	 */
 	// Init the fft module
-	if (fftProcess((float32_t*)adcABuffer) != ARM_MATH_SUCCESS ) {
+/*	if (fftProcess((float32_t*)adcABuffer) != ARM_MATH_SUCCESS ) {
 		LOG("Error: Couldn't initialize the fft module!\n");
 	}
-
+*/
 
 	/*
 	 * Main program loop
@@ -280,7 +280,7 @@ void DMA2_Stream0_IRQHandler(void)
 /*
  * This function handles interrupts for the DMA2 Stream0
  */
-void DMA2_Stream1_IRQHandler(void)
+void DMA2_Stream3_IRQHandler(void)
 {
 	HAL_DMA_IRQHandler(AdcBHandle.DMA_Handle);
 }

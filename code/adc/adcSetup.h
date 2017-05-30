@@ -43,29 +43,30 @@
 /*
  * Definition for ADC_B clock resources
  */
-#define ADC_B							ADC3
-#define ADC_B_CLK_ENABLE()				__HAL_RCC_ADC3_CLK_ENABLE()
+#define ADC_B							ADC2
+#define ADC_B_CLK_ENABLE()				__HAL_RCC_ADC2_CLK_ENABLE()
 //#define DMA_2_CLK_ENABLE()				__HAL_RCC_DMA2_CLK_ENABLE()
-#define ADC_B_CHANNEL_GPIO_CLK_ENABLE()	__HAL_RCC_GPIOF_CLK_ENABLE()
+#define ADC_B_CHANNEL_GPIO_CLK_ENABLE()	__HAL_RCC_GPIOC_CLK_ENABLE()
 
 #define ADC_B_FORCE_RESET()				__HAL_RCC_ADC_FORCE_RESET()
 #define ADC_B_RELEASE_RESET()			__HAL_RCC_ADC_RELEASE_RESET()
 
 // Definition of ADC_B channel pin
 // Should be PF4 on CN10 (pin nr 11)
-#define ADC_B_CHANNEL_PIN				GPIO_PIN_4
-#define ADC_B_CHANNEL_GPIO_PORT			GPIOF
+// Changed to PC2 on CN10 (pin nr 9)
+#define ADC_B_CHANNEL_PIN				GPIO_PIN_2
+#define ADC_B_CHANNEL_GPIO_PORT			GPIOC
 
 // Definition for ADC_B's channel
-#define ADC_B_CHANNEL					ADC_CHANNEL_14
+#define ADC_B_CHANNEL					ADC_CHANNEL_12
 
 // Definition for ADC_B's DMA
-#define ADC_B_DMA_CHANNEL				DMA_CHANNEL_2
-#define ADC_B_DMA_STREAM				DMA2_Stream1
+#define ADC_B_DMA_CHANNEL				DMA_CHANNEL_1
+#define ADC_B_DMA_STREAM				DMA2_Stream3
 
 // Definition for ADC_B's NVIC
-#define ADC_B_DMA_IRQn					DMA2_Stream1_IRQn
-#define ADC_B_DMA_IRQHandler			DMA2_Stream1_IRQHandler
+#define ADC_B_DMA_IRQn					DMA2_Stream3_IRQn
+#define ADC_B_DMA_IRQHandler			DMA2_Stream3_IRQHandler
 
 void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB);
 void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc);
