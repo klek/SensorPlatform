@@ -15,6 +15,26 @@
 // Static global in this scope
 //static arm_cfft_instance_f32 fftInstance;
 
+/*
+ * 	Function to copy data from inData buffer
+ * 	to outData buffer
+ * 	This function expects the size-variable to describe the
+ * 	size of outData. This also means that inData buffer must
+ * 	equal atleast half of this size!!
+ */
+void copyBuffers(uint32_t* inData, uint32_t* outData, uint32_t sizeOfOutData)
+{
+	int i = 0;
+	for ( ; i < (sizeOfOutData - 1) ; i++)
+	{
+		// Copy I_DATA into first slot of outData
+		outData[i] = inData[i] & I_DATA_POS;
+		// Copy Q_DATA into second slot of outData, shift it down aswell
+		outData[i + 1] = ((inData[i] & Q_DATA_POS) >> 16);
+	}
+}
+
+
 // FFT init seems to not be needed??
 arm_status fftProcess(float32_t* data)
 {

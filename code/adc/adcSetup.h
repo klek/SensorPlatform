@@ -22,9 +22,12 @@
  *			This gives with 12-bit data:
  *			(12 + 480) / 13.5 MHz = 36.44 us (~27.440kSa/s)
  *			So currently we are sampling about 10 times faster than needed
+ *
+ *			If we then use this delay between samples, can we reduce the sampling time even more?
  */
 #define ADC_CLOCK						ADC_CLOCK_SYNC_PCLK_DIV8
 #define ADC_SAMPLING_TIME				ADC_SAMPLETIME_480CYCLES
+#define ADC_SAMPLING_DELAY				ADC_TWOSAMPLINGDELAY_5CYCLES
 
 /*
  * Definition for ADC_A clock resources

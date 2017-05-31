@@ -110,7 +110,7 @@ void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB)
 	 */
 	multiModeConfig.Mode				= ADC_DUALMODE_REGSIMULT;
 	multiModeConfig.DMAAccessMode		= ADC_DMAACCESSMODE_2;
-	multiModeConfig.TwoSamplingDelay	= ADC_TWOSAMPLINGDELAY_5CYCLES;
+	multiModeConfig.TwoSamplingDelay	= ADC_SAMPLING_DELAY;
 
 	if ( HAL_ADCEx_MultiModeConfigChannel(adcA, &multiModeConfig) != HAL_OK )
 	{

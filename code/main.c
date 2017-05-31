@@ -54,15 +54,23 @@
 /* Private define ------------------------------------------------------------*/
 #define ADC_BUFFER_SIZE 			2048
 
+// Defines for the statusVector
+#define HALF_BUFFER_INT				(1 << 0)
+#define FULL_BUFFER_INT				(1 << 1)
+
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* ADC handler declaration */
 ADC_HandleTypeDef    AdcAHandle;
 ADC_HandleTypeDef    AdcBHandle;
 
-// Defining two global buffers for DMA storage
+// Defining a global buffer for DMA storage
 uint32_t adcBuffer[ADC_BUFFER_SIZE];
-uint32_t adcBBuffer[ADC_BUFFER_SIZE];
+
+// Defining a global buffer for data storage
+// Might need 2 of these, one for first part of buffer and one for second
+// These could be moved to main
+uint32_t inData[ADC_BUFFER_SIZE];
 
 // ADC value
 // Note(klek): These can most likely be moved into main-scope
@@ -70,6 +78,7 @@ uint32_t ADCAValue = 0;
 uint32_t ADCBValue = 0;
 
 uint32_t interrupted = 0;
+uint32_t statusVector = 0;
 
 
 /* Private function prototypes -----------------------------------------------*/
@@ -83,7 +92,7 @@ void DMA2_Stream0_IRQHandler(void);
 //void DMA2_Stream3_IRQHandler(void);
 
 // Static functions
-static void Error_Handler(void);
+//static void Error_Handler(void);
 static void CPU_CACHE_Enable(void);
 
 /* Private functions ---------------------------------------------------------*/
@@ -193,9 +202,35 @@ int main(void)
 		 * Note(klek):	Where should data be moved? IRQ not that great probably
 		 * 				Should it be done here then, in the main-loop?
 		 */
+		// Check status-vector for half buffer interrupt
+		if ( statusVector & HALF_BUFFER_INT )
+		{
+			// Remove the flag
+			statusVector &= ~HALF_BUFFER_INT;
+
+			// Move data from first half of adcBuffer into processing buffer inData
+//			copyBuffers((uint32_t*)adcBuffer, (uint32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+		}
+		// Check status-vector for full buffer
+		else if ( statusVector & FULL_BUFFER_INT )
+		{
+			// Remove the flag
+			statusVector &= ~FULL_BUFFER_INT;
+
+			// Move last half of adcBuffer into processing buffer inData
+//			copyBuffers((uint32_t*)adcBuffer[ADC_BUFFER_SIZE/2], (uint32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+		}
+		else
+		{
+			// Here we process data
+			// Print the ADCXValues
+			LOG("The current ADC_A-value is %lu\t\t", inData[10] );
+			LOG("The current ADC_B-value is %lu\n", inData[11] );
+		}
+
 
 		/*
-		 * Note(klek):	The flow processing flow should be as follows after
+		 * Note(klek):	The processing flow should be as follows after
 		 * 				interrupts have occured.
 		 *
 		 * 				Data should be moved from DMA-buffers
@@ -204,9 +239,6 @@ int main(void)
 		 * 				After filtering and decimation of the data, we can start processing it
 		 * 				by doing arctangent calculation and also follow that up with FFT
 		 */
-		// Print the ADCXValues
-		LOG("The current ADC_A-value is %lu\t\t", (ADCAValue & 0xFFFF) );
-		LOG("The current ADC_B-value is %lu\n", ( (ADCAValue & 0xFFFF0000) >> 16 ) );
 		LOG("We reached interrupt routine %lu times since last\n", interrupted);
 		interrupted = 0;
 	}
@@ -304,14 +336,14 @@ void DMA2_Stream0_IRQHandler(void)
   * @param  None
   * @retval None
   */
-static void Error_Handler(void)
+/*static void Error_Handler(void)
 {
-  /* Turn LED3 on */
+  // Turn LED3 on
   BSP_LED_On(LED3);
   while (1)
   {
   }
-}
+}*/
 
 /**
   * @brief  Conversion complete callback in non blocking mode
@@ -329,8 +361,11 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
 		// Copy data
 		//ADCAValue = accumulate(adcABuffer, adcABuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
 		ADCAValue = adcBuffer[4];
+		ADCBValue = adcBuffer[5];
 
 		// Set status bit
+		statusVector |= FULL_BUFFER_INT;
+
 		interrupted++;
 	}
 	else if ( AdcHandle->Instance == ADC_B ) {
@@ -366,6 +401,8 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* AdcHandle)
 		ADCAValue = adcBuffer[4];
 
 		// Set status bit
+		statusVector |= HALF_BUFFER_INT;
+
 		//interrupted++;
 	}
 	else if ( AdcHandle->Instance == ADC_B ) {
