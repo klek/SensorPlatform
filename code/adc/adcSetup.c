@@ -25,13 +25,13 @@ void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB)
 
 	// Configure the ADC_A peripheral
 	adcA->Instance          		 = ADC_A;
-	adcA->Init.ClockPrescaler        = ADC_CLOCKPRESCALER_PCLK_DIV2;
+	adcA->Init.ClockPrescaler        = ADC_CLOCK;
 	adcA->Init.Resolution            = ADC_RESOLUTION_12B;
-	adcA->Init.ScanConvMode          = DISABLE;                       /* Sequencer disabled (ADC conversion on only 1 channel: channel set on rank 1) */
-	adcA->Init.ContinuousConvMode    = ENABLE;                       /* Continuous mode enabled to have continuous conversion  */
-	adcA->Init.DiscontinuousConvMode = DISABLE;                       /* Parameter discarded because sequencer is disabled */
+	adcA->Init.ScanConvMode          = DISABLE;                       	// Sequencer disabled (ADC conversion on only 1 channel: channel set on rank 1)
+	adcA->Init.ContinuousConvMode    = ENABLE;                       	// Continuous mode enabled to have continuous conversion
+	adcA->Init.DiscontinuousConvMode = DISABLE;                       	// Parameter discarded because sequencer is disabled
 	adcA->Init.NbrOfDiscConversion   = 0;
-	adcA->Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE;        /* Conversion start trigged at each external event */
+	adcA->Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE;	// Conversion start trigged at each external event
 	adcA->Init.ExternalTrigConv      = ADC_EXTERNALTRIGCONV_T1_CC1;
 	adcA->Init.DataAlign             = ADC_DATAALIGN_RIGHT;
 	adcA->Init.NbrOfConversion       = 1;
@@ -40,13 +40,13 @@ void adcSetup(ADC_HandleTypeDef* adcA, ADC_HandleTypeDef* adcB)
 
 	// Configure the ADC_B peripheral
 	adcB->Instance          		 = ADC_B;
-	adcB->Init.ClockPrescaler        = ADC_CLOCKPRESCALER_PCLK_DIV4;
+	adcB->Init.ClockPrescaler        = ADC_CLOCK;
 	adcB->Init.Resolution            = ADC_RESOLUTION_12B;
-	adcB->Init.ScanConvMode          = DISABLE;                       /* Sequencer disabled (ADC conversion on only 1 channel: channel set on rank 1) */
-	adcB->Init.ContinuousConvMode    = ENABLE;                       /* Continuous mode enabled to have continuous conversion  */
-	adcB->Init.DiscontinuousConvMode = DISABLE;                       /* Parameter discarded because sequencer is disabled */
+	adcB->Init.ScanConvMode          = DISABLE;                       	// Sequencer disabled (ADC conversion on only 1 channel: channel set on rank 1)
+	adcB->Init.ContinuousConvMode    = ENABLE;                       	// Continuous mode enabled to have continuous conversion
+	adcB->Init.DiscontinuousConvMode = DISABLE;                       	// Parameter discarded because sequencer is disabled
 	adcB->Init.NbrOfDiscConversion   = 0;
-	adcB->Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE;        /* Conversion start trigged at each external event */
+	adcB->Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE;   // Conversion start trigged at each external event
 	adcB->Init.ExternalTrigConv      = ADC_EXTERNALTRIGCONV_T1_CC1;
 	adcB->Init.DataAlign             = ADC_DATAALIGN_RIGHT;
 	adcB->Init.NbrOfConversion       = 1;
@@ -147,7 +147,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc)
 {
 	GPIO_InitTypeDef          GPIO_InitStruct;
 	static DMA_HandleTypeDef  hdma_adcA;
-	static DMA_HandleTypeDef  hdma_adcB;
+//	static DMA_HandleTypeDef  hdma_adcB;
 
 
 	/*

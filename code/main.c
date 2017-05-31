@@ -125,6 +125,9 @@ int main(void)
 	 */
 	SystemClock_Config();
 
+	// Initialize variables
+	memset(adcBuffer, 0, ADC_BUFFER_SIZE);
+
 #ifdef LOGGING
 	/*
 	* Setup UART-debugging with serial console
@@ -179,6 +182,7 @@ int main(void)
 		LOG("Error: Couldn't initialize the fft module!\n");
 	}
 */
+
 
 	/*
 	 * Main program loop
@@ -362,7 +366,7 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* AdcHandle)
 		ADCAValue = adcBuffer[4];
 
 		// Set status bit
-		interrupted++;
+		//interrupted++;
 	}
 	else if ( AdcHandle->Instance == ADC_B ) {
 		// Copy data

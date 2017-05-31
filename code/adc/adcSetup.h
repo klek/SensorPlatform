@@ -13,9 +13,18 @@
 #include "stm32f7xx_nucleo_144.h"
 
 /*
- * Common defines for the ADCs
+ * Common defines to set the ADC sampling time
+ * A sample time of ~2kSa/s is the goal
+ * 			APB2 Clock is derived from system clock, currently 216 MHz / 2 = 108 MHz
+ *			The ADC_CLOCK is derived from the APB2 clock, currently 108 MHz / 8 = 13.5 MHz
+ *			ADC_SAMPLING_TIME sets the time for each sampling period, currently 480 cycles
+ *
+ *			This gives with 12-bit data:
+ *			(12 + 480) / 13.5 MHz = 36.44 us (~27.440kSa/s)
+ *			So currently we are sampling about 10 times faster than needed
  */
-#define ADC_SAMPLING_TIME				ADC_SAMPLETIME_56CYCLES
+#define ADC_CLOCK						ADC_CLOCK_SYNC_PCLK_DIV8
+#define ADC_SAMPLING_TIME				ADC_SAMPLETIME_480CYCLES
 
 /*
  * Definition for ADC_A clock resources
