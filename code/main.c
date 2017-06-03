@@ -52,7 +52,8 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define ADC_BUFFER_SIZE 			2048
+#define ADC_BUFFER_SIZE 			(FFT_SIZE * 2)
+#define DECIMATION_FACTOR			2
 
 // Defines for the statusVector
 #define HALF_BUFFER_INT				(1 << 0)
@@ -106,8 +107,8 @@ int main(void)
 	 */
 	// Might need 2 of these, one for first part of buffer and one for second
 	// These could be moved to main
-	uint32_t inData[ADC_BUFFER_SIZE];
-	uint32_t fftInData[FFT_SIZE];
+	float32_t inData[ADC_BUFFER_SIZE];
+	float32_t fftInData[FFT_SIZE];
 
 
 	/*
@@ -213,16 +214,13 @@ int main(void)
 			// Remove the flag
 			statusVector &= ~HALF_BUFFER_INT;
 
-			uint32_t tmp1, tmp2;
-
-			tmp1 = adcBuffer[0] & I_DATA_POS;
-			tmp2 = (adcBuffer[0] & Q_DATA_POS) >> 16;
-
 			// Move data from first half of adcBuffer into processing buffer inData
-			copyBuffers((uint32_t*)adcBuffer, (uint32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+			// This will also center the data into the middle of the new buffer
+			copyBuffers((uint32_t*)adcBuffer, (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+
 			// Print the ADCXValues
-			LOG("The current ADC_A-value is %lu\t\t", inData[10] );
-			LOG("The current ADC_B-value is %lu\n", inData[11] );
+			LOG("The current ADC_A-value is %f\t\t", inData[10] );
+			LOG("The current ADC_B-value is %f\n", inData[11] );
 		}
 		// Check status-vector for full buffer
 		else if ( statusVector & FULL_BUFFER_INT )
@@ -231,19 +229,44 @@ int main(void)
 			statusVector &= ~FULL_BUFFER_INT;
 
 			// Move last half of adcBuffer into processing buffer inData
-			copyBuffers((uint32_t*)(adcBuffer + (ADC_BUFFER_SIZE/2)), (uint32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+			copyBuffers((uint32_t*)(adcBuffer + (ADC_BUFFER_SIZE/2)), (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
 			// Print the ADCXValues
-			LOG("The current ADC_A-value is %lu\t\t", inData[10] );
-			LOG("The current ADC_B-value is %lu\n", inData[11] );
+			LOG("The current ADC_A-value is %f\t\t", inData[10] );
+			LOG("The current ADC_B-value is %f\n", inData[11] );
 		}
 		else
 		{
 			// Here we process data
 		}
+
+		// inData contains the new sampled data
+		// This data needs to be filtered and decimated since we are looking for very low frequencies.
+		// For the FFT to be accurate we need a resolution of 0.5 Hz
+		// A rough estimate of the FFT resolution is possible to get from samples/sec divided by points
+		// This is true for the low-pass filtering with FIR as well
+
+		// Currently we have will decimate by half => removing half of the samples
+		// This should generate more than enough samples left to do FFT, but reduce the samples/sec drastically
+		// Essentially we should do a ring buffer with same size as the number of points in the FFT
+		// And then we could continuously execute FFT on this vector
+		uint32_t validItems = 0;
+		validItems = filterAndDecimate((float32_t*)inData, ADC_BUFFER_SIZE, DECIMATION_FACTOR);
+
+		if ( validItems == 0 )
+		{
+			LOG("ERROR: Filtering and decimation results in zero new items\n");
+		}
+
+		// inData can now be copied to the fftInData...
+		LOG("New buffer contains %lu valid items\n", validItems);
+
 		// Print the ADCXValues
 		//LOG("The current ADC_A-value is %lu\t\t", inData[10] );
 		//LOG("The current ADC_B-value is %lu\n", inData[11] );
 
+
+		// Process data through FFT
+		//fftProcess((float32_t*)inData);
 
 		/*
 		 * Note(klek):	The processing flow should be as follows after

@@ -21,7 +21,8 @@
 #define FFT_INVERSE_FLAG			0				// We are doing forward transform
 
 // Prototypes
-void copyBuffers(uint32_t* inData, uint32_t* outData, uint32_t sizeOfOutData);
+void copyBuffers(uint32_t* inData, float32_t* outData, uint32_t sizeOfOutData);
+uint32_t filterAndDecimate(float32_t*inData, uint32_t dataSize, uint16_t decFactor);
 arm_status fftProcess(float32_t* data);
 arm_status filterIncData(void);
 
