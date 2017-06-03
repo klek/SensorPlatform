@@ -208,8 +208,16 @@ int main(void)
 			// Remove the flag
 			statusVector &= ~HALF_BUFFER_INT;
 
+			uint32_t tmp1, tmp2;
+
+			tmp1 = adcBuffer[0] & I_DATA_POS;
+			tmp2 = (adcBuffer[0] & Q_DATA_POS) >> 16;
+
 			// Move data from first half of adcBuffer into processing buffer inData
-//			copyBuffers((uint32_t*)adcBuffer, (uint32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+			copyBuffers((uint32_t*)adcBuffer, (uint32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+			// Print the ADCXValues
+			LOG("The current ADC_A-value is %lu\t\t", inData[10] );
+			LOG("The current ADC_B-value is %lu\n", inData[11] );
 		}
 		// Check status-vector for full buffer
 		else if ( statusVector & FULL_BUFFER_INT )
@@ -218,15 +226,18 @@ int main(void)
 			statusVector &= ~FULL_BUFFER_INT;
 
 			// Move last half of adcBuffer into processing buffer inData
-//			copyBuffers((uint32_t*)adcBuffer[ADC_BUFFER_SIZE/2], (uint32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
-		}
-		else
-		{
-			// Here we process data
+			copyBuffers((uint32_t*)(adcBuffer + (ADC_BUFFER_SIZE/2)), (uint32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
 			// Print the ADCXValues
 			LOG("The current ADC_A-value is %lu\t\t", inData[10] );
 			LOG("The current ADC_B-value is %lu\n", inData[11] );
 		}
+		else
+		{
+			// Here we process data
+		}
+		// Print the ADCXValues
+		//LOG("The current ADC_A-value is %lu\t\t", inData[10] );
+		//LOG("The current ADC_B-value is %lu\n", inData[11] );
 
 
 		/*
