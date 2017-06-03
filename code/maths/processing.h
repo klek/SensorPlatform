@@ -16,7 +16,7 @@
 #define Q_DATA_POS					0xFFFF0000		// We expect Q_DATA in the upper 16 bits of adcBuffer
 
 // Defines for the FFT
-#define FFT_SIZE					1024
+#define FFT_SIZE					2048
 #define FFT_BIT_REVERSAL			1
 #define FFT_INVERSE_FLAG			0				// We are doing forward transform
 

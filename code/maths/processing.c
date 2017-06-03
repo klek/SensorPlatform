@@ -38,9 +38,13 @@ void copyBuffers(uint32_t* inData, uint32_t* outData, uint32_t sizeOfOutData)
 // FFT init seems to not be needed??
 arm_status fftProcess(float32_t* data)
 {
-	//return arm_cfft_radix4_init_f32(&fftInstance, FFT_SIZE, FFT_INVERSE_FLAG, FFT_BIT_REVERSAL);
+#if FFT_SIZE == 1024
+	arm_cfft_f32(&arm_cfft_sR_f32_len1024, data, FFT_INVERSE_FLAG, FFT_BIT_REVERSAL);
+#elif FFT_SIZE == 2048
 	arm_cfft_f32(&arm_cfft_sR_f32_len2048, data, FFT_INVERSE_FLAG, FFT_BIT_REVERSAL);
-
+#elif FFT_SIZE == 4096
+	arm_cfft_f32(&arm_cfft_sR_f32_len4096, data, FFT_INVERSE_FLAG, FFT_BIT_REVERSAL);
+#endif
 	return ARM_MATH_SUCCESS;
 }
 

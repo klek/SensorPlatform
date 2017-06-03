@@ -68,9 +68,6 @@ ADC_HandleTypeDef    AdcBHandle;
 uint32_t adcBuffer[ADC_BUFFER_SIZE];
 
 // Defining a global buffer for data storage
-// Might need 2 of these, one for first part of buffer and one for second
-// These could be moved to main
-uint32_t inData[ADC_BUFFER_SIZE];
 
 // ADC value
 // Note(klek): These can most likely be moved into main-scope
@@ -104,6 +101,14 @@ static void CPU_CACHE_Enable(void);
   */
 int main(void)
 {
+	/*
+	 * Initilizing variables
+	 */
+	// Might need 2 of these, one for first part of buffer and one for second
+	// These could be moved to main
+	uint32_t inData[ADC_BUFFER_SIZE];
+	uint32_t fftInData[FFT_SIZE];
+
 
 	/*
 	 * Enable the CPU Cache
