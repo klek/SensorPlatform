@@ -27,8 +27,8 @@ uint32_t circPush(struct circularBuffer *buff, struct complexData data)
 	}
 
 	// Put in the new data into buffer
-	buff->buffer[buff->head]->realData = data->realData;
-	buff->buffer[buff->head]->imagData = data->imagData;
+	buff->buffer[buff->head].realData = data.realData;
+	buff->buffer[buff->head].imagData = data.imagData;
 	// Set head to the new elements index
 	buff->head = next;
 
@@ -53,8 +53,8 @@ uint32_t circPop(struct circularBuffer *buff, struct complexData *data)
 		next = 0;
 	}
 
-	*data->realData = buff->buffer[buff->tail]->realData;
-	*data->imagData = buff->buffer[buff->tail]->imagData;
+	data->realData = buff->buffer[buff->tail].realData;
+	data->imagData = buff->buffer[buff->tail].imagData;
 	buff->tail = next;
 
 	return BUFFER_OK;
@@ -106,8 +106,8 @@ uint32_t circMultiRead(struct circularBuffer *buff, struct complexData *data, ui
 
 	while ( nrItems < howMany && item != buff->head )
 	{
-		data[nrItems]->realData = buff->buffer[item]->realData;
-		data[nrItems]->imagData = buff->buffer[item]->imagData;
+		data[nrItems].realData = buff->buffer[item].realData;
+		data[nrItems].imagData = buff->buffer[item].imagData;
 
 		// Go to next item
 		item--;
@@ -125,9 +125,11 @@ uint32_t circMultiRead(struct circularBuffer *buff, struct complexData *data, ui
 }
 
 /*
- *	Function to pop and push several items into the buffer
+ *	Function to push several items into the buffer, overwriting
+ *	any existing data on those positions
+ *
  */
-uint32_t circPopAndPush(struct circularBuffer *buff, struct complexData *data, uint32_t howMany)
+uint32_t circMultiPush(struct circularBuffer *buff, struct complexData *data, uint32_t howMany)
 {
 	return 0;
 }

@@ -9,6 +9,9 @@
 #if !defined(BUFFER_H)
 #define BUFFER_H
 
+#include "arm_math.h"
+
+
 struct complexData {
 	// The real-part of the data (I-Data)
 	float32_t realData;
@@ -39,7 +42,7 @@ typedef enum {
 	BUFFER_FULL = 1,
 	BUFFER_EMPTY = 2,
 	BUFFER_OUT_OF_BOUNDS = 3
-};
+} circBuffer_Err;
 
 uint32_t circPush(struct circularBuffer *buff, struct complexData data);
 uint32_t circPop(struct circularBuffer *buff, struct complexData *data);
