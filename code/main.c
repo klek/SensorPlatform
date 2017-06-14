@@ -41,6 +41,7 @@
 #include "debug/logging.h"
 #include "adc/adcSetup.h"
 #include "maths/processing.h"
+#include "misc/buffer.h"
 
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{
@@ -109,6 +110,7 @@ int main(void)
 	// These could be moved to main
 	float32_t inData[ADC_BUFFER_SIZE];
 	float32_t fftInData[FFT_SIZE];
+	float32_t fftResult[FFT_SIZE];
 
 
 	/*
@@ -185,11 +187,6 @@ int main(void)
 	}
 */
 	/*
-	 * Note(klek): 	ADC_A will be ahead of ADC_B here already, cause of serial startup
-	 * 				Can we fix this somehow? Like resetting the buffers in some way
-	 */
-
-	/*
 	 * Note(klek): 	More initialization needed?
 	 */
 	// Init the fft module
@@ -265,6 +262,12 @@ int main(void)
 		//LOG("The current ADC_B-value is %lu\n", inData[11] );
 
 
+		/*
+		 * Note(klek): 	When we process data through FFT the previous buffer will be overwritten
+		 * 				unless we do this some other way.
+		 * 				Also can we implement some sort of ringbuffer to not have to copy data
+		 * 				more than once?
+		 */
 		// Process data through FFT
 		//fftProcess((float32_t*)inData);
 
