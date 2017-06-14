@@ -41,7 +41,7 @@
 #include "debug/logging.h"
 #include "adc/adcSetup.h"
 #include "maths/processing.h"
-#include "misc/buffer.h"
+#include "misc/complexBuffer.h"
 
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{
