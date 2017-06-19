@@ -13,38 +13,41 @@
 
 
 struct complexData {
-	// The real-part of the data (I-Data)
-	float32_t realData;
-	// The complex part of the data (Q-Data)
-	float32_t imagData;
+    // The real-part of the data (I-Data)
+    float32_t realData;
+    // The complex part of the data (Q-Data)
+    float32_t imagData;
 };
 
 /*
- * 	A structure for a circular buffer
- * 	The head always points to the latest element in the buffer
- * 	while tail is the first item put in the buffer
+ *  A structure for a circular buffer
+ *  The head always points to the latest element in the buffer
+ *  while tail is the first item put in the buffer
  *
- * 	A typical read for the FFT would then be every item from tail to head
+ *  A typical read for the FFT would then be every item from tail to head
  */
 struct circularBuffer {
-	// Always points to start of buffer
-	struct complexData * const buffer;
-	// Index to head of buffer
-	uint32_t head;
-	// Index to end of buffer
-	uint32_t tail;
-	// Defines the maximum size of buffer
-	const uint32_t maxLen;
+    // Always points to start of buffer
+    struct complexData * const buffer;
+    // Index to head of buffer
+    uint32_t head;
+    // Index to end of buffer
+    uint32_t tail;
+    // Flag to indicate if the buffer is full?
+    uint32_t filled;
+    // Defines the maximum size of buffer
+    const uint32_t maxLen;
 };
 
 typedef enum {
-	BUFFER_OK = 0,
-	BUFFER_FULL = 1,
-	BUFFER_EMPTY = 2,
-	BUFFER_OUT_OF_BOUNDS = 3
+    BUFFER_OK = 0,
+    BUFFER_FULL = 1,
+    BUFFER_EMPTY = 2,
+    BUFFER_OUT_OF_BOUNDS = 3
 } circBuffer_Err;
 
 uint32_t circPush(struct circularBuffer *buff, struct complexData data);
 uint32_t circPop(struct circularBuffer *buff, struct complexData *data);
+uint32_t circMultiPush(struct circularBuffer *buff, struct complexData *data, uint32_t howMany);
 
 #endif

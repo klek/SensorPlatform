@@ -9,127 +9,205 @@
 #include "complexBuffer.h"
 
 /*
- *	Function to push an item into the buffer
+ *  Function to push an item into the buffer
  */
 uint32_t circPush(struct circularBuffer *buff, struct complexData data)
 {
-	// Next is where head will point to after this write
-	uint32_t next = buff->head + 1;
-	if ( next >= buff->maxLen )
-	{
-		next = 0;
-	}
+    // Next is where head will point to after this write
+    uint32_t next = buff->head + 1;
+    if ( next >= buff->maxLen )
+    {
+        next = 0;
+    }
 
-	// Is buffer full?
-	if ( next == buff->tail )
-	{
-		return BUFFER_FULL;
-	}
+    // Is buffer full?
+    if ( next == buff->tail )
+    {
+        return BUFFER_FULL;
+    }
 
-	// Put in the new data into buffer
-	buff->buffer[buff->head].realData = data.realData;
-	buff->buffer[buff->head].imagData = data.imagData;
-	// Set head to the new elements index
-	buff->head = next;
+    // Put in the new data into buffer
+    buff->buffer[buff->head].realData = data.realData;
+    buff->buffer[buff->head].imagData = data.imagData;
+    // Set head to the new elements index
+    buff->head = next;
 
-	return BUFFER_OK;
+    return BUFFER_OK;
 }
 
 /*
- *	Function to pop/remove an item from the buffer
+ *  Function to pop/remove an item from the buffer
  */
 uint32_t circPop(struct circularBuffer *buff, struct complexData *data)
 {
-	// If the head is the tail the buffer is empty
-	if ( buff->head == buff->tail )
-	{
-		return BUFFER_EMPTY;
-	}
+    // If the head is the tail the buffer is empty
+    if ( buff->head == buff->tail )
+    {
+        return BUFFER_EMPTY;
+    }
 
-	// Next is where tail will point to after this read
-	uint32_t next = buff->tail + 1;
-	if ( next >= buff->maxLen )
-	{
-		next = 0;
-	}
+    // Next is where tail will point to after this read
+    uint32_t next = buff->tail + 1;
+    if ( next >= buff->maxLen )
+    {
+        next = 0;
+    }
 
-	data->realData = buff->buffer[buff->tail].realData;
-	data->imagData = buff->buffer[buff->tail].imagData;
-	buff->tail = next;
+    data->realData = buff->buffer[buff->tail].realData;
+    data->imagData = buff->buffer[buff->tail].imagData;
+    buff->tail = next;
 
-	return BUFFER_OK;
+    return BUFFER_OK;
 }
 
 /*
- * 	Function to read N-number of elements in the buffer
- * 	and put them into a linear one instead
+ *  Function to read N-number of elements in the buffer
+ *  and put them into a linear one instead
  *
- * 	This function assumes the provided buffer can hold howMany elements
+ *  This function assumes the provided buffer can hold howMany elements
  */
 uint32_t circMultiRead(struct circularBuffer *buff, struct complexData *data, uint32_t howMany)
 {
-	// Number of items we actually read from the buffer
-	uint32_t nrItems = 0;
+    // Number of items we actually read from the buffer
+    uint32_t nrItems = 0;
 
-	// If buffer empty?
-	if ( buff->head == buff->tail )
-	{
-		return BUFFER_EMPTY;
-	}
+    // If buffer empty?
+    if ( buff->head == buff->tail )
+    {
+        return BUFFER_EMPTY;
+    }
 
-	// Check if buffer can contain the amount of items we want to collect
-	if ( howMany > buff->maxLen )
-	{
-		return BUFFER_OUT_OF_BOUNDS;
-	}
+    // Check if buffer can contain the amount of items we want to collect
+    if ( howMany > buff->maxLen )
+    {
+        return BUFFER_OUT_OF_BOUNDS;
+    }
 
-	// Check if buffer actually contains this amount of valid items
-	if ( buff->head > buff->tail )
-	{
-		nrItems = buff->head - buff->tail;
-	}
-	else if ( buff->head < buff->tail )
-	{
-		// The remaining part before overflow
-		nrItems = buff->maxLen - buff->tail;
-		// The amount of items in the new rotation
-		nrItems += buff->head;
-	}
+    // Check if buffer actually contains this amount of valid items
+    if ( buff->head > buff->tail )
+    {
+        nrItems = buff->head - buff->tail;
+    }
+    else if ( buff->head < buff->tail )
+    {
+        // The remaining part before overflow
+        nrItems = buff->maxLen - buff->tail;
+        // The amount of items in the new rotation
+        nrItems += buff->head;
+    }
 
-	if ( howMany > nrItems )
-	{
-		return BUFFER_OUT_OF_BOUNDS;
-	}
+    if ( howMany > nrItems )
+    {
+        return BUFFER_OUT_OF_BOUNDS;
+    }
 
-	// Start read from the tail
-	uint32_t item = buff->tail;
+    // Start read from the tail
+    uint32_t item = buff->tail;
 
-	while ( nrItems < howMany && item != buff->head )
-	{
-		data[nrItems].realData = buff->buffer[item].realData;
-		data[nrItems].imagData = buff->buffer[item].imagData;
+    while ( nrItems < howMany && item != buff->head )
+    {
+        data[nrItems].realData = buff->buffer[item].realData;
+        data[nrItems].imagData = buff->buffer[item].imagData;
 
-		// Go to next item
-		item--;
-		// Check bounds
-		if ( item < 0 )
-		{
-			item = buff->maxLen;
-		}
+        // Go to next item
+        item--;
+        // Check bounds
+        if ( item < 0 )
+        {
+            item = buff->maxLen;
+        }
 
-		// Increment the items collected
-		nrItems++;
-	}
+        // Increment the items collected
+        nrItems++;
+    }
 
-	return nrItems;
+    // Are we done here?
+    
+    return nrItems;
 }
 
 /*
- *	Function to push several items into the buffer, overwriting
- *	any existing data on those positions
+ *  Function to push several items into the buffer, overwriting
+ *  any existing data on those positions
  *
+ * NOTE(klek): How the buffer works
+ *
+ *    The buffer starts empty and we are simply incrementing the head index for each
+ *    new item we add to the buffer. The head index always points to an empty slot
+ *    in the array, so that the buffer will always have an empty slot
+ *
+ *    [ # # # # # # . . . . . . . . . . . . ]
+ *     ^            ^
+ *   tail         head
+ *
+ *    The buffer continues to fill up and is now reaching its limits
+ *
+ *    [ # # # # # # # # # # # # # # # # # . ]
+ *     ^                                  ^
+ *   tail                               head
+ *
+ *    The buffer will eventually be filled with data, and then we simply need to increment
+ *    both of the pointers so that head + 1 will always be equal to tail
+ *
+ *    [ # . # # # # # # # # # # # # # # # # ]
+ *        ^ ^
+ *     head tail
+ *
+ *    This is what we need to implement!
  */
 uint32_t circMultiPush(struct circularBuffer *buff, struct complexData *data, uint32_t howMany)
 {
-	return 0;
+    // So we are fillin the buffer at the head
+    // And when the buffer is full we simply move both head and tail for each new value we input
+
+    // However this doesn't mean that the buffer was full when we arrived to this function.
+    // The buffer can get full during our time here, so we need to constantly check for this
+
+    // Or should we attach a flag to the structure to indicate whether the buffer has been filled once
+    // or not?
+
+
+    int i = 0;
+    int nextHead = 0;
+    
+    for ( ; i < howMany ; i++ )
+    {
+        // Grab the value of the head index
+        nextHead = buff->head + 1;
+        
+        // Check if we are in bounds of the array
+        if ( nextHead >= buff->maxLen )
+        {
+            nextHead = 0;
+        }
+
+        // Check if the buffer is full
+        if ( nextHead == buff->tail )
+        {
+            // Then we simply increment the tail pointer
+            if ( (buff->tail + 1) >= buff->maxLen )
+            {
+                buff->tail = 0;
+            }
+            else
+            {
+                buff->tail += 1;
+            }
+        }
+
+        // Now we should have correct values on both nextHead and buff->tail so that there
+        // is atleast one spot free in the array
+        // So lets insert the data
+        buff->buffer[buff->head].realData = data[i].realData;
+        buff->buffer[buff->head].imagData = data[i].imagData;
+        
+        // Finally we update the head with its new position according to nextHead
+        buff->head = nextHead;
+        
+    }
+
+    // What should we return?
+    // The number of items we copied into the buffer ofc
+    // But do we even need a return value here tho?
+    return i;
 }

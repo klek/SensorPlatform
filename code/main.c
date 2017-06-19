@@ -53,12 +53,12 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define ADC_BUFFER_SIZE 			(FFT_SIZE * 2)
-#define DECIMATION_FACTOR			2
+#define ADC_BUFFER_SIZE             (FFT_SIZE * 2)
+#define DECIMATION_FACTOR           2
 
 // Defines for the statusVector
-#define HALF_BUFFER_INT				(1 << 0)
-#define FULL_BUFFER_INT				(1 << 1)
+#define HALF_BUFFER_INT             (1 << 0)
+#define FULL_BUFFER_INT             (1 << 1)
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -103,187 +103,200 @@ static void CPU_CACHE_Enable(void);
   */
 int main(void)
 {
-	/*
-	 * Initilizing variables
-	 */
-	// Might need 2 of these, one for first part of buffer and one for second
-	// These could be moved to main
-	float32_t inData[ADC_BUFFER_SIZE];
-	float32_t fftInData[FFT_SIZE];
-	float32_t fftResult[FFT_SIZE];
+    /*
+     * Initilizing variables
+     */
+    // Might need 2 of these, one for first part of buffer and one for second
+    // These could be moved to main
+    float32_t inData[ADC_BUFFER_SIZE];
+    float32_t fftInData[FFT_SIZE];
+    float32_t fftResult[FFT_SIZE];
+
+    // The rotating buffer for data before FFT calculation
+    // This is one item larger than the other buffers because it will always
+    // contain one empty slot
+    struct circularBuffer workData[FFT_SIZE + 1];
+
+    /*
+     * Enable the CPU Cache
+     */
+    CPU_CACHE_Enable();
+
+    /* STM32F7xx HAL library initialization:
+       - Configure the Flash prefetch
+       - Systick timer is configured by default as source of time base, but user
+         can eventually implement his proper time base source (a general purpose
+         timer for example or other time source), keeping in mind that Time base
+         duration should be kept 1ms since PPP_TIMEOUT_VALUEs are defined and
+         handled in milliseconds basis.
+       - Set NVIC Group Priority to 4
+       - Low Level Initialization
+     */
+    HAL_Init();
 
 
-	/*
-	 * Enable the CPU Cache
-	 */
-	CPU_CACHE_Enable();
+    /*
+     * Configure LED1 and LED3
+     */
+    BSP_LED_Init(LED1);
+    BSP_LED_Init(LED3);
 
-	/* STM32F7xx HAL library initialization:
-	   - Configure the Flash prefetch
-	   - Systick timer is configured by default as source of time base, but user
-		 can eventually implement his proper time base source (a general purpose
-		 timer for example or other time source), keeping in mind that Time base
-		 duration should be kept 1ms since PPP_TIMEOUT_VALUEs are defined and
-		 handled in milliseconds basis.
-	   - Set NVIC Group Priority to 4
-	   - Low Level Initialization
-	 */
-	HAL_Init();
+    /*
+     * Configure the system clock to 216 MHz
+     */
+    SystemClock_Config();
 
-
-	/*
-	 * Configure LED1 and LED3
-	 */
-	BSP_LED_Init(LED1);
-	BSP_LED_Init(LED3);
-
-	/*
-	 * Configure the system clock to 216 MHz
-	 */
-	SystemClock_Config();
-
-	// Initialize variables
-	memset(adcBuffer, 0, ADC_BUFFER_SIZE);
+    // Initialize variables
+    memset(adcBuffer, 0, ADC_BUFFER_SIZE);
 
 #ifdef LOGGING
-	/*
-	* Setup UART-debugging with serial console
-	*/
-	uartSetup();
+    /*
+    * Setup UART-debugging with serial console
+    */
+    uartSetup();
 #endif
 
-	/*
-	 * Setup the two ADCs
-	 */
-	adcSetup(&AdcAHandle, &AdcBHandle);
+    /*
+     * Setup the two ADCs
+     */
+    adcSetup(&AdcAHandle, &AdcBHandle);
 
 
 
-	int n = 0;
-	while ( n < 160 ){
-		n++;
-		LOG("The loopvalue is %i\n", n);
-	}
+    int n = 0;
+    while ( n < 160 ){
+        n++;
+        LOG("The loopvalue is %i\n", n);
+    }
 
-	/*
-	 * Start both of the ADCs with associated buffers
-	 */
-	// Start the conversion process for DUAL-mode interleaved ADCs
-	if ( adcStart(&AdcAHandle, &AdcBHandle, adcBuffer, ADC_BUFFER_SIZE) != HAL_OK )
-	{
-		LOG("ERROR: Failed to start DUAL-mode interleaved conversion!\n");
-	}
+    /*
+     * Start both of the ADCs with associated buffers
+     */
+    // Start the conversion process for DUAL-mode interleaved ADCs
+    if ( adcStart(&AdcAHandle, &AdcBHandle, adcBuffer, ADC_BUFFER_SIZE) != HAL_OK )
+    {
+        LOG("ERROR: Failed to start DUAL-mode interleaved conversion!\n");
+    }
 /*
-	// Start the conversion process for ADC_A
-	if(HAL_ADC_Start_DMA(&AdcAHandle, adcABuffer, ADC_BUFFER_SIZE) != HAL_OK)
-	{
-		LOG("ERROR: Failed to start ADC_A with DMA!\n");
-	}
+    // Start the conversion process for ADC_A
+    if(HAL_ADC_Start_DMA(&AdcAHandle, adcABuffer, ADC_BUFFER_SIZE) != HAL_OK)
+    {
+        LOG("ERROR: Failed to start ADC_A with DMA!\n");
+    }
 
-	// Start the conversion process for ADC_B
-	if(HAL_ADC_Start_DMA(&AdcBHandle, adcBBuffer, ADC_BUFFER_SIZE) != HAL_OK)
-	{
-		LOG("ERROR: Failed to start ADC_B with DMA!\n");
-	}
+    // Start the conversion process for ADC_B
+    if(HAL_ADC_Start_DMA(&AdcBHandle, adcBBuffer, ADC_BUFFER_SIZE) != HAL_OK)
+    {
+        LOG("ERROR: Failed to start ADC_B with DMA!\n");
+    }
 */
-	/*
-	 * Note(klek): 	More initialization needed?
-	 */
-	// Init the fft module
-/*	if (fftProcess((float32_t*)adcABuffer) != ARM_MATH_SUCCESS ) {
-		LOG("Error: Couldn't initialize the fft module!\n");
-	}
+    /*
+     * Note(klek):  More initialization needed?
+     */
+    // Init the fft module
+/*  if (fftProcess((float32_t*)adcABuffer) != ARM_MATH_SUCCESS ) {
+        LOG("Error: Couldn't initialize the fft module!\n");
+    }
 */
 
 
-	/*
-	 * Main program loop
-	 */
-	while (1)
-	{
-		/*
-		 * Note(klek):	Where should data be moved? IRQ not that great probably
-		 * 				Should it be done here then, in the main-loop?
-		 */
-		// Check status-vector for half buffer interrupt
-		if ( statusVector & HALF_BUFFER_INT )
-		{
-			// Remove the flag
-			statusVector &= ~HALF_BUFFER_INT;
+    /*
+     * Main program loop
+     */
+    while (1)
+    {
+        /*
+         * Note(klek):  Where should data be moved? IRQ not that great probably
+         *              Should it be done here then, in the main-loop?
+         */
+        // Check status-vector for half buffer interrupt
+        if ( statusVector & HALF_BUFFER_INT )
+        {
+            // Remove the flag
+            statusVector &= ~HALF_BUFFER_INT;
 
-			// Move data from first half of adcBuffer into processing buffer inData
-			// This will also center the data into the middle of the new buffer
-			copyBuffers((uint32_t*)adcBuffer, (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+            // Move data from first half of adcBuffer into processing buffer inData
+            // This will also center the data into the middle of the new buffer
+            copyBuffers((uint32_t*)adcBuffer, (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
 
-			// Print the ADCXValues
-			LOG("The current ADC_A-value is %f\t\t", inData[10] );
-			LOG("The current ADC_B-value is %f\n", inData[11] );
-		}
-		// Check status-vector for full buffer
-		else if ( statusVector & FULL_BUFFER_INT )
-		{
-			// Remove the flag
-			statusVector &= ~FULL_BUFFER_INT;
+            // Print the ADCXValues
+            LOG("The current ADC_A-value is %f\t\t", inData[10] );
+            LOG("The current ADC_B-value is %f\n", inData[11] );
+        }
+        // Check status-vector for full buffer
+        else if ( statusVector & FULL_BUFFER_INT )
+        {
+            // Remove the flag
+            statusVector &= ~FULL_BUFFER_INT;
 
-			// Move last half of adcBuffer into processing buffer inData
-			copyBuffers((uint32_t*)(adcBuffer + (ADC_BUFFER_SIZE/2)), (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
-			// Print the ADCXValues
-			LOG("The current ADC_A-value is %f\t\t", inData[10] );
-			LOG("The current ADC_B-value is %f\n", inData[11] );
-		}
-		else
-		{
-			// Here we process data
-		}
+            // Move last half of adcBuffer into processing buffer inData
+            copyBuffers((uint32_t*)(adcBuffer + (ADC_BUFFER_SIZE/2)), (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+            // Print the ADCXValues
+            LOG("The current ADC_A-value is %f\t\t", inData[10] );
+            LOG("The current ADC_B-value is %f\n", inData[11] );
+        }
+        else
+        {
+            // Here we process data
+        }
 
-		// inData contains the new sampled data
-		// This data needs to be filtered and decimated since we are looking for very low frequencies.
-		// For the FFT to be accurate we need a resolution of 0.5 Hz
-		// A rough estimate of the FFT resolution is possible to get from samples/sec divided by points
-		// This is true for the low-pass filtering with FIR as well
+        // inData contains the new sampled data
+        // This data needs to be filtered and decimated since we are looking for very low frequencies.
+        // For the FFT to be accurate we need a resolution of 0.5 Hz
+        // A rough estimate of the FFT resolution is possible to get from samples/sec divided by points
+        // This is true for the low-pass filtering with FIR as well
 
-		// Currently we have will decimate by half => removing half of the samples
-		// This should generate more than enough samples left to do FFT, but reduce the samples/sec drastically
-		// Essentially we should do a ring buffer with same size as the number of points in the FFT
-		// And then we could continuously execute FFT on this vector
-		uint32_t validItems = 0;
-		validItems = filterAndDecimate((float32_t*)inData, ADC_BUFFER_SIZE, DECIMATION_FACTOR);
+        // Currently we have will decimate by half => removing half of the samples
+        // This should generate more than enough samples left to do FFT, but reduce the samples/sec drastically
+        // Essentially we should do a ring buffer with same size as the number of points in the FFT
+        // And then we could continuously execute FFT on this vector
+        uint32_t validItems = 0;
+        validItems = filterAndDecimate((float32_t*)inData, ADC_BUFFER_SIZE, DECIMATION_FACTOR);
 
-		if ( validItems == 0 )
-		{
-			LOG("ERROR: Filtering and decimation results in zero new items\n");
-		}
+        if ( validItems == 0 )
+        {
+            LOG("ERROR: Filtering and decimation results in zero new items\n");
+        }
 
-		// inData can now be copied to the fftInData...
-		LOG("New buffer contains %lu valid items\n", validItems);
+        // inData can now be copied to the fftInData...
+        LOG("New buffer contains %lu valid items\n", validItems);
 
-		// Print the ADCXValues
-		//LOG("The current ADC_A-value is %lu\t\t", inData[10] );
-		//LOG("The current ADC_B-value is %lu\n", inData[11] );
+        /*
+         * TODO(klek): Arctangent calculation of the valid items in the buffer
+         */
 
 
-		/*
-		 * Note(klek): 	When we process data through FFT the previous buffer will be overwritten
-		 * 				unless we do this some other way.
-		 * 				Also can we implement some sort of ringbuffer to not have to copy data
-		 * 				more than once?
-		 */
-		// Process data through FFT
-		//fftProcess((float32_t*)inData);
+        /*
+         * TODO(klek): Update the rotating buffer with the newly calculated values
+         */
+        
+        // Print the ADCXValues
+        //LOG("The current ADC_A-value is %lu\t\t", inData[10] );
+        //LOG("The current ADC_B-value is %lu\n", inData[11] );
 
-		/*
-		 * Note(klek):	The processing flow should be as follows after
-		 * 				interrupts have occured.
-		 *
-		 * 				Data should be moved from DMA-buffers
-		 * 				Data should be pre-processed before being saved elsewhere
-		 * 				Pre-processing includes filtering and decimation of the data
-		 * 				After filtering and decimation of the data, we can start processing it
-		 * 				by doing arctangent calculation and also follow that up with FFT
-		 */
-		LOG("We reached interrupt routine %lu times since last\n", interrupted);
-		interrupted = 0;
-	}
+
+        /*
+         * NOTE(klek):  When we process data through FFT the previous buffer will be overwritten
+         *              unless we do this some other way.
+         *              Also can we implement some sort of ringbuffer to not have to copy data
+         *              more than once?
+         */
+        // Process data through FFT
+        //fftProcess((float32_t*)inData);
+
+        /*
+         * NOTE(klek):  The processing flow should be as follows after
+         *              interrupts have occured.
+         *
+         *              Data should be moved from DMA-buffers
+         *              Data should be pre-processed before being saved elsewhere
+         *              Pre-processing includes filtering and decimation of the data
+         *              After filtering and decimation of the data, we can start processing it
+         *              by doing arctangent calculation and also follow that up with FFT
+         */
+        LOG("We reached interrupt routine %lu times since last\n", interrupted);
+        interrupted = 0;
+    }
 }
 
 /**
@@ -354,7 +367,7 @@ void SystemClock_Config(void)
  */
 /*void ADC_IRQHandler(void)
 {
-	HAL_ADC_IRQHandler(&AdcAHandle);
+    HAL_ADC_IRQHandler(&AdcAHandle);
 }*/
 
 /*
@@ -362,7 +375,7 @@ void SystemClock_Config(void)
  */
 void DMA2_Stream0_IRQHandler(void)
 {
-	HAL_DMA_IRQHandler(AdcAHandle.DMA_Handle);
+    HAL_DMA_IRQHandler(AdcAHandle.DMA_Handle);
 }
 
 /*
@@ -370,7 +383,7 @@ void DMA2_Stream0_IRQHandler(void)
  */
 //void DMA2_Stream3_IRQHandler(void)
 //{
-//	HAL_DMA_IRQHandler(AdcBHandle.DMA_Handle);
+//  HAL_DMA_IRQHandler(AdcBHandle.DMA_Handle);
 //}
 
 /**
@@ -396,33 +409,33 @@ void DMA2_Stream0_IRQHandler(void)
   */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
 {
-	/*
-	 * We need to find out which ADC gave the interrupt
-	 */
-	if ( AdcHandle->Instance == ADC_A ) {
-		// Copy data
-		//ADCAValue = accumulate(adcABuffer, adcABuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
-		ADCAValue = adcBuffer[4];
-		ADCBValue = adcBuffer[5];
+    /*
+     * We need to find out which ADC gave the interrupt
+     */
+    if ( AdcHandle->Instance == ADC_A ) {
+        // Copy data
+        //ADCAValue = accumulate(adcABuffer, adcABuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
+        ADCAValue = adcBuffer[4];
+        ADCBValue = adcBuffer[5];
 
-		// Set status bit
-		statusVector |= FULL_BUFFER_INT;
+        // Set status bit
+        statusVector |= FULL_BUFFER_INT;
 
-		interrupted++;
-	}
-	else if ( AdcHandle->Instance == ADC_B ) {
-		// Copy data
-		//ADCBValue = accumulate(adcBBuffer, adcBBuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
-//		ADCBValue = adcBBuffer[4];
-		LOG("BUG: Why did this happen??\n");
-	}
-	else {
-		// What now?
-		// Turn LED3 on, to indicate something went wrong
-		BSP_LED_On(LED3);
-	}
-	/* Turn LED1 on: Transfer process is correct */
-	BSP_LED_On(LED1);
+        interrupted++;
+    }
+    else if ( AdcHandle->Instance == ADC_B ) {
+        // Copy data
+        //ADCBValue = accumulate(adcBBuffer, adcBBuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
+//      ADCBValue = adcBBuffer[4];
+        LOG("BUG: Why did this happen??\n");
+    }
+    else {
+        // What now?
+        // Turn LED3 on, to indicate something went wrong
+        BSP_LED_On(LED3);
+    }
+    /* Turn LED1 on: Transfer process is correct */
+    BSP_LED_On(LED1);
 }
 
 /**
@@ -434,32 +447,32 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
   */
 void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* AdcHandle)
 {
-	/*
-	 * We need to find out which ADC gave the interrupt
-	 */
-	if ( AdcHandle->Instance == ADC_A ) {
-		// Copy data
-		//ADCAValue = accumulate(adcABuffer, adcABuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
-		ADCAValue = adcBuffer[4];
+    /*
+     * We need to find out which ADC gave the interrupt
+     */
+    if ( AdcHandle->Instance == ADC_A ) {
+        // Copy data
+        //ADCAValue = accumulate(adcABuffer, adcABuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
+        ADCAValue = adcBuffer[4];
 
-		// Set status bit
-		statusVector |= HALF_BUFFER_INT;
+        // Set status bit
+        statusVector |= HALF_BUFFER_INT;
 
-		//interrupted++;
-	}
-	else if ( AdcHandle->Instance == ADC_B ) {
-		// Copy data
-		//ADCBValue = accumulate(adcBBuffer, adcBBuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
-//		ADCBValue = adcBBuffer[4];
-		LOG("BUG: Why did this happen??\n");
-	}
-	else {
-		// What now?
-		// Turn LED3 on, to indicate something went wrong
-		BSP_LED_On(LED3);
-	}
-	/* Turn LED1 on: Transfer process is correct */
-	BSP_LED_On(LED1);
+        //interrupted++;
+    }
+    else if ( AdcHandle->Instance == ADC_B ) {
+        // Copy data
+        //ADCBValue = accumulate(adcBBuffer, adcBBuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
+//      ADCBValue = adcBBuffer[4];
+        LOG("BUG: Why did this happen??\n");
+    }
+    else {
+        // What now?
+        // Turn LED3 on, to indicate something went wrong
+        BSP_LED_On(LED3);
+    }
+    /* Turn LED1 on: Transfer process is correct */
+    BSP_LED_On(LED1);
 }
 
 
