@@ -65,6 +65,8 @@ uint32_t circPop(struct circularBuffer *buff, struct complexData *data)
  *  and put them into a linear one instead
  *
  *  This function assumes the provided buffer can hold howMany elements
+ *
+ *  Is this function correct?
  */
 uint32_t circMultiRead(struct circularBuffer *buff, struct complexData *data, uint32_t howMany)
 {
@@ -184,6 +186,9 @@ uint32_t circMultiPush(struct circularBuffer *buff, struct complexData *data, ui
         // Check if the buffer is full
         if ( nextHead == buff->tail )
         {
+            // Set the filled flag to true
+            buff->filled = 1;
+            
             // Then we simply increment the tail pointer
             if ( (buff->tail + 1) >= buff->maxLen )
             {

@@ -48,6 +48,7 @@ typedef enum {
 
 uint32_t circPush(struct circularBuffer *buff, struct complexData data);
 uint32_t circPop(struct circularBuffer *buff, struct complexData *data);
+uint32_t circMultiRead(struct circularBuffer *buff, struct complexData *data, uint32_t howMany);
 uint32_t circMultiPush(struct circularBuffer *buff, struct complexData *data, uint32_t howMany);
 
 #endif

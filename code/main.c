@@ -191,7 +191,7 @@ int main(void)
     }
 */
     /*
-     * Note(klek):  More initialization needed?
+     * NOTE(klek):  More initialization needed?
      */
     // Init the fft module
 /*  if (fftProcess((float32_t*)adcABuffer) != ARM_MATH_SUCCESS ) {
@@ -269,6 +269,17 @@ int main(void)
         /*
          * TODO(klek): Update the rotating buffer with the newly calculated values
          */
+        circMultiPush(workData, (struct complexData *)inData, validItems);
+
+        /*
+         * TODO(klek): When the ringBuffer has been filled, we should copy data to
+         *             fftInData buffer for FFT-processing.
+         *             This needs some form of checking
+         */
+        if ( workData->filled == 1 )
+        {
+            circMultiRead(workData, (struct complexData *)fftInData, FFT_SIZE);
+        }
         
         // Print the ADCXValues
         //LOG("The current ADC_A-value is %lu\t\t", inData[10] );
