@@ -94,8 +94,8 @@ uint32_t circMultiRead(struct circularBuffer *buff, struct complexData *data, ui
     {
         // The remaining part before overflow
         nrItems = buff->maxLen - buff->tail;
-        // The amount of items in the new rotation
-        nrItems += buff->head;
+        // The amount of items in the new rotation plus the zero index
+        nrItems += buff->head + 1;
     }
 
     if ( howMany > nrItems )
@@ -105,18 +105,21 @@ uint32_t circMultiRead(struct circularBuffer *buff, struct complexData *data, ui
 
     // Start read from the tail
     uint32_t item = buff->tail;
+    nrItems = 0;
 
-    while ( nrItems < howMany && item != buff->head )
+    // So if we get here, we should copy the requested amount of items
+    // and we shouldn't need to check whereas we passed head or not
+    while ( nrItems < howMany )// && item != buff->head )
     {
         data[nrItems].realData = buff->buffer[item].realData;
         data[nrItems].imagData = buff->buffer[item].imagData;
 
         // Go to next item
-        item--;
+        item++;
         // Check bounds
-        if ( item < 0 )
+        if ( item >= buff->maxLen )
         {
-            item = buff->maxLen;
+            item = 0;
         }
 
         // Increment the items collected
@@ -199,9 +202,13 @@ uint32_t circMultiPush(struct circularBuffer *buff, struct complexData *data, ui
                 buff->tail += 1;
             }
         }
+        else {
+        	// Set the filled flag to false
+        	buff->filled = 0;
+        }
 
         // Now we should have correct values on both nextHead and buff->tail so that there
-        // is atleast one spot free in the array
+        // is at least one spot free in the array
         // So lets insert the data
         buff->buffer[buff->head].realData = data[i].realData;
         buff->buffer[buff->head].imagData = data[i].imagData;

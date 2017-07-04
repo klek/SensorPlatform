@@ -54,7 +54,8 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 #define ADC_BUFFER_SIZE             (FFT_SIZE * 2)
-#define DECIMATION_FACTOR           2
+#define RING_BUFFER_SIZE			(FFT_SIZE)
+#define DECIMATION_FACTOR           16
 
 // Defines for the statusVector
 #define HALF_BUFFER_INT             (1 << 0)
@@ -114,8 +115,16 @@ int main(void)
 
     // The rotating buffer for data before FFT calculation
     // This is one item larger than the other buffers because it will always
-    // contain one empty slot
-    struct circularBuffer workData[FFT_SIZE + 1];
+    // contain one empty slot -- WHY DID I THINK THIS?
+    struct complexData dataBuffer[RING_BUFFER_SIZE];
+    struct circularBuffer workData =
+    {
+    	.buffer = dataBuffer,
+		.head = 0,
+		.tail = 0,
+		.filled = 0,
+		.maxLen = (RING_BUFFER_SIZE)
+    };
 
     /*
      * Enable the CPU Cache
@@ -269,16 +278,16 @@ int main(void)
         /*
          * TODO(klek): Update the rotating buffer with the newly calculated values
          */
-        circMultiPush(workData, (struct complexData *)inData, validItems);
+        circMultiPush(&workData, (struct complexData *)inData, validItems);
 
         /*
          * TODO(klek): When the ringBuffer has been filled, we should copy data to
          *             fftInData buffer for FFT-processing.
          *             This needs some form of checking
          */
-        if ( workData->filled == 1 )
+        if ( workData.filled == 1 )
         {
-            circMultiRead(workData, (struct complexData *)fftInData, FFT_SIZE);
+            circMultiRead(&workData, (struct complexData *)fftInData, FFT_SIZE);
         }
         
         // Print the ADCXValues
