@@ -12,6 +12,9 @@
 #include "arm_math.h"
 #include "arm_const_structs.h"
 
+// Arctan implementation
+#include "atan.h"
+
 // Static global in this scope
 //static arm_cfft_instance_f32 fftInstance;
 
@@ -78,6 +81,28 @@ uint32_t filterAndDecimate(float32_t* data, uint32_t dataSize, uint16_t decFacto
 	else {
 		return 0;
 	}
+}
+
+/*
+ * Calculate the phase for the complex data provided
+ */
+uint32_t phaseCalc(float32_t* data, uint32_t dataSize)
+{
+	float32_t angle;
+
+	int i;
+	for (i = 0; i < dataSize; (i += 2) )
+	{
+		// Calculate the angle
+		angle = atan2TaylorApprox(data[i], data[i + 1]);
+
+		// Assign angle to same first slot and set second slot to zero
+		data[i] = angle;
+		data[i + 1] = 0.0;
+	}
+
+	// Return dummy value atm
+	return 1;
 }
 
 // FFT init seems to not be needed??

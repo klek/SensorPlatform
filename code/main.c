@@ -273,7 +273,7 @@ int main(void)
         /*
          * TODO(klek): Arctangent calculation of the valid items in the buffer
          */
-
+        phaseCalc((float32_t*)inData, validItems);
 
         /*
          * TODO(klek): Update the rotating buffer with the newly calculated values
