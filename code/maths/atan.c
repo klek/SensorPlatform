@@ -15,7 +15,7 @@
  *             Maybe we could get this function inline anyway?
  *
  */
-static void octantify(float32_t *x, float32_t *y, uint32_t *octant)
+static void octantify(float32_t *x, float32_t *y, float32_t *octant)
 {
     float32_t temp = 0;
     if ( *y < 0 )
@@ -61,7 +61,7 @@ float32_t atan2TaylorApprox(float32_t x, float32_t y)
         return (x >= 0 ? 0 : PI);
 
     // Initialize variables
-    uint32_t octant = 0;
+    float32_t octant = 0;
     float32_t angleShift = 0.0;
     float32_t phi = 0.0;
     float32_t angle = 0.0;
