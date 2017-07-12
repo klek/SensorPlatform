@@ -12,6 +12,7 @@
 
 /*
  * NOTE(klek): Doing octant finding in a macro or as a static function?
+ *             Maybe we could get this function inline anyway?
  *
  */
 static void octantify(float32_t *x, float32_t *y, uint32_t *octant)
@@ -64,6 +65,7 @@ float32_t atan2TaylorApprox(float32_t x, float32_t y)
     float32_t angleShift = 0.0;
     float32_t phi = 0.0;
     float32_t angle = 0.0;
+    float32_t angleSquared = 0.0;
 
     // Move the input values to first octant
     octantify(&x, &y, &octant);
@@ -72,14 +74,15 @@ float32_t atan2TaylorApprox(float32_t x, float32_t y)
 
     // Do the division for the phi
     angle = y / x;
+    angleSquared = angle * angle;
     
     // NOTE(klek): Can this be written in another way to reduce the multiplications?
     // Taylor approximation with special atan constants
     phi = ATAN_CONSTANT_1;
     phi += ATAN_CONSTANT_2 * angle;
-    phi += ATAN_CONSTANT_3 * angle * angle * angle;
-    phi += ATAN_CONSTANT_4 * angle * angle * angle * angle * angle;
-    phi += ATAN_CONSTANT_5 * angle * angle * angle * angle * angle * angle * angle;
+    phi += ATAN_CONSTANT_3 * angle * angleSquared;
+    phi += ATAN_CONSTANT_4 * angle * angleSquared * angleSquared;
+    phi += ATAN_CONSTANT_5 * angle * angleSquared * angleSquared * angleSquared;
     
     
     // Return value will be calculated angle plus the phaseshift
