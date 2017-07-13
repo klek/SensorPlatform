@@ -29,9 +29,9 @@ static void octantify(float32_t *x, float32_t *y, float32_t *octant)
     }
     if ( *x <= 0 )
     {
-        // We are in octant 3-6
+        // We are in octant 3-4
         // Rotate us by 90 degrees
-        temp = *x;
+        temp = -(*x);
         *x = *y;
         *y = temp;
         // Add 2 octants to octant
@@ -74,17 +74,22 @@ float32_t atan2TaylorApprox(float32_t x, float32_t y)
 
     // Do the division for the phi
     angle = y / x;
-    angleSquared = angle * angle;
-    
+    angleSquared = -(angle * angle);
+
+    // NOTE(klek): Something seems to be wrong with these equations??
+    //             arctan(t) = t - t3/3 + t5/5 - t7/7+...
+    //
+    //             arctan(t) = t * ( 1 - t2( 1/3 - t2( 1/5 -t2/7)))
     // NOTE(klek): Can this be written in another way to reduce the multiplications?
     // Taylor approximation with special atan constants
-    phi = ATAN_CONSTANT_1;
-    phi += ATAN_CONSTANT_2 * angle;
-    phi += ATAN_CONSTANT_3 * angle * angleSquared;
-    phi += ATAN_CONSTANT_4 * angle * angleSquared * angleSquared;
-    phi += ATAN_CONSTANT_5 * angle * angleSquared * angleSquared * angleSquared;
+    phi = ATAN_CONSTANT_5;
+    phi = ATAN_CONSTANT_4 + (angleSquared * phi);
+    phi = ATAN_CONSTANT_3 + (angleSquared * phi);
+    phi = ATAN_CONSTANT_2 + (angleSquared * phi);
+    phi = ATAN_CONSTANT_1 + (angleSquared * phi);
+    phi = angle * phi;
     
     
-    // Return value will be calculated angle plus the phaseshift
+    // Return value will be calculated angle plus the angleshift
     return angleShift + phi;
 }
