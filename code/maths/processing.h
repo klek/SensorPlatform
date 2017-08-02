@@ -15,6 +15,9 @@
 #define I_DATA_POS					0x0000FFFF		// We expect I_DATA in the lower 16 bits of adcBuffer
 #define Q_DATA_POS					0xFFFF0000		// We expect Q_DATA in the upper 16 bits of adcBuffer
 
+// Defines for the IIR
+#define N_STAGES					2				// Is this the order of the filter? Seems like it is order - 1
+
 // Defines for the FFT
 #define FFT_SIZE					2048
 #define FFT_BIT_REVERSAL			1
@@ -28,12 +31,13 @@
 	float32_t qData;
 };*/
 
+
 // Prototypes
 void copyBuffers(uint32_t *inData, float32_t *outData, uint32_t sizeOfOutData);
 uint32_t filterAndDecimate(float32_t *inData, uint32_t dataSize, uint16_t decFactor);
 uint32_t phaseCalc(float32_t* data, uint32_t dataSize);
 arm_status fftProcess(float32_t *data);
-arm_status filterIncData(void);
+arm_status filterData(void);
 
 
 #endif

@@ -15,8 +15,23 @@
 // Arctan implementation
 #include "atan.h"
 
-// Static global in this scope
-//static arm_cfft_instance_f32 fftInstance;
+
+/*
+ * IIR-filter coefficients
+ */
+static const float32_t filterCoeff[] =
+{
+		0.0004,			// b10
+		0.0004,			// b11
+		0.0000,			// b12
+	   -0.8573,			// a11
+		0.0000,			// a12
+		1.0000,			// b20
+		2.0000,			// b21
+		1.0000,			// b22
+	   -1.8362,			// a21
+		0.8580			// a22
+};
 
 /*
  * 	Function to copy data from inData buffer
@@ -50,10 +65,23 @@ uint32_t filterAndDecimate(float32_t* data, uint32_t dataSize, uint16_t decFacto
 	// Initialization of local variables
 	int saveVal = 0;
 	int index = 0;
+	float32_t outData[FFT_SIZE * 2];
 
-
-	// First data should be run through the FIR-filter
+	// First data should be run through the IIR-filter
 	// Note(klek): This is not yet implemented
+
+	// NOTE(klek): Should this be implemented in separate function to not have it run each time
+	//			   we enter here?
+	// Initialize the filter structure
+	arm_biquad_cascade_df2T_instance_f32 butterworth_f32;
+	// This is temporary buffer for what?
+	float32_t stateBuffer[2 * N_STAGES];
+	arm_biquad_cascade_df2T_init_f32(&butterworth_f32, N_STAGES, (float32_t *)filterCoeff, stateBuffer);
+
+	// Do the filtering
+	// NOTE(klek): Here we must add some output vector. How?
+	arm_biquad_cascade_df2T_f32(&butterworth_f32, data, outData, dataSize);
+
 
 	// Decimation is currently done by the factor which is expected to be an even number
 	// The decimation simply removes every decFactor in the vector and returns same vector
@@ -66,9 +94,9 @@ uint32_t filterAndDecimate(float32_t* data, uint32_t dataSize, uint16_t decFacto
 		// Do we need to check boundaries?
 		if ( index < dataSize ) {
 			// Copy I-data
-			data[index++] = data[decFactor];
+			data[index++] = outData[decFactor];
 			// Copy Q-data
-			data[index++] = data[decFactor + 1];
+			data[index++] = outData[decFactor + 1];
 		}
 	}
 
@@ -118,7 +146,7 @@ arm_status fftProcess(float32_t* data)
 	return ARM_MATH_SUCCESS;
 }
 
-arm_status filterIncData(void)
+arm_status filterData(void)
 {
 	return ARM_MATH_SUCCESS;
 }
