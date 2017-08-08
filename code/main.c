@@ -42,6 +42,7 @@
 #include "adc/adcSetup.h"
 #include "maths/processing.h"
 #include "misc/complexBuffer.h"
+//#include "ethernet/ethernet.h"
 
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{
@@ -64,8 +65,11 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* ADC handler declaration */
-ADC_HandleTypeDef    AdcAHandle;
-ADC_HandleTypeDef    AdcBHandle;
+ADC_HandleTypeDef AdcAHandle;
+ADC_HandleTypeDef AdcBHandle;
+
+// ETH handler declaration
+ETH_HandleTypeDef EthHandle;
 
 // Defining a global buffer for DMA storage
 uint32_t adcBuffer[ADC_BUFFER_SIZE];

@@ -55,7 +55,8 @@
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-extern ADC_HandleTypeDef    AdcHandle;
+extern ADC_HandleTypeDef AdcHandle;
+extern ETH_HandleTypeDef EthHandle;
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
@@ -178,6 +179,15 @@ void ADCx_DMA_IRQHandler(void)
   HAL_DMA_IRQHandler(AdcHandle.DMA_Handle);
 }
 
+/**
+  * @brief  This function handles Ethernet interrupt request.
+  * @param  None
+  * @retval None
+  */
+void ETH_IRQHandler(void)
+{
+  HAL_ETH_IRQHandler(&EthHandle);
+}
 
 /**
   * @brief  This function handles PPP interrupt request.
