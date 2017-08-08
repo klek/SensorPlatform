@@ -3,7 +3,7 @@ function output = butterworthFilter(Fs, input)
 % Fs is the sampling frequency of the input data
 
 % Setting up the filter
-cutOffFreq = 50;
+cutOffFreq = 45;
 
 % Nyquist frequency 
 nyqFreq = Fs / 2;
@@ -26,6 +26,9 @@ coeffs = [coeffs(1,:) coeffs(2,:)]
 
 % Verifying the filter
 %freqz(b,a)
+
+% Creating the filter coefficients
+[z, p] = butter(order, cutOffNorm)
 
 output = filter(z, p, input);
 

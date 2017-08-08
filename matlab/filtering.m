@@ -9,7 +9,7 @@ myLen = timeBase / timePeriod;
 t = (0:myLen-1) * timePeriod;
 
 % Creating test signal
-x_sin = sin(2*pi*2*t) + sin(2*pi*5000*t);
+x_sin = sin(2 * pi * 2 * t) + sin(2 * pi * 5000 * t);
 
 % Plot test signal
 figure(1)
