@@ -9,4 +9,11 @@
 #if !defined(ETHERNETSETUP_H)
 #define ETHERNETSETUP_H
 
+#include "netif.h"
+
+// Prototypes
+void ethernetif_input(struct netif *netif);
+void netifConfig(void);
+
+
 #endif

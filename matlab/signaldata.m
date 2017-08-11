@@ -32,7 +32,7 @@ t = (0:myLen-1) * timePeriod;
 
 % Generation of the signal (not using 5,8 GHz signal atm)
 %inputSignal =  0.3*sin(2*pi*beatsSec*t) + 0.7*sin(2*pi*respSec*t) + 0.5*sin(2*pi*BASE_SIGNAL_500HZ*t);
-inputSignal =  0.7*sin(2*pi*respSec*t) + 0.5*sin(2*pi*BASE_SIGNAL_500HZ*t);
+inputSignal =  0.5*sin(2*pi*1*t) + 0.5*sin(2*pi*0.5*t);
 
 % Plotting the inputsignal
 figure(1)

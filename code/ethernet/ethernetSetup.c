@@ -21,6 +21,51 @@
 // For debug messages
 #include "../debug/logging.h"
 
+// Variables
+/*
+  @Note: The DMARxDscrTab and DMATxDscrTab must be declared in a non cacheable memory region
+         In this example they are declared in the first 256 Byte of SRAM1 memory, so this
+         memory region is configured by MPU as a device memory (please refer to MPU_Config() in main.c).
+
+         In this example the ETH buffers are located in the SRAM2 memory, 
+         since the data cache is enabled, so cache maintenance operations are mandatory.
+ */
+#if defined ( __CC_ARM   )
+ETH_DMADescTypeDef  DMARxDscrTab[ETH_RXBUFNB] __attribute__((at(0x20020000)));/* Ethernet Rx DMA Descriptors */
+
+ETH_DMADescTypeDef  DMATxDscrTab[ETH_TXBUFNB] __attribute__((at(0x20020080)));/* Ethernet Tx DMA Descriptors */
+
+uint8_t Rx_Buff[ETH_RXBUFNB][ETH_RX_BUF_SIZE] __attribute__((at(0x2007C000))); /* Ethernet Receive Buffers */
+
+uint8_t Tx_Buff[ETH_TXBUFNB][ETH_TX_BUF_SIZE] __attribute__((at(0x2007D7D0))); /* Ethernet Transmit Buffers */
+
+#elif defined ( __ICCARM__ ) /*!< IAR Compiler */
+#pragma data_alignment=4 
+
+#pragma location=0x20020000
+__no_init ETH_DMADescTypeDef  DMARxDscrTab[ETH_RXBUFNB];/* Ethernet Rx DMA Descriptors */
+
+#pragma location=0x20020080
+__no_init ETH_DMADescTypeDef  DMATxDscrTab[ETH_TXBUFNB];/* Ethernet Tx DMA Descriptors */
+
+#pragma location=0x2007C000
+__no_init uint8_t Rx_Buff[ETH_RXBUFNB][ETH_RX_BUF_SIZE]; /* Ethernet Receive Buffers */
+
+#pragma location=0x2007D7D0
+__no_init uint8_t Tx_Buff[ETH_TXBUFNB][ETH_TX_BUF_SIZE]; /* Ethernet Transmit Buffers */
+
+#elif defined ( __GNUC__ ) /*!< GNU Compiler */
+
+ETH_DMADescTypeDef  DMARxDscrTab[ETH_RXBUFNB] __attribute__((section(".RxDecripSection")));/* Ethernet Rx DMA Descriptor */
+
+ETH_DMADescTypeDef  DMATxDscrTab[ETH_TXBUFNB] __attribute__((section(".TxDescripSection")));/* Ethernet Tx DMA Descriptors */
+
+uint8_t Rx_Buff[ETH_RXBUFNB][ETH_RX_BUF_SIZE] __attribute__((section(".RxarraySection"))); /* Ethernet Receive Buffers */
+
+uint8_t Tx_Buff[ETH_TXBUFNB][ETH_TX_BUF_SIZE] __attribute__((section(".TxarraySection"))); /* Ethernet Transmit Buffers */
+
+#endif
+
 
 void HAL_ETH_MspInit(ETH_HandleTypeDef *heth)
 {
@@ -305,6 +350,132 @@ static struct pbuf* low_level_input(struct netif* netif)
     }
     return p;
     
+}
+
+/**
+ * Should be called at the beginning of the program to set up the
+ * network interface. It calls the function low_level_init() to do the
+ * actual setup of the hardware.
+ *
+ * This function should be passed as a parameter to netif_add().
+ *
+ * @param netif the lwip network interface structure for this ethernetif
+ * @return ERR_OK if the loopif is initialized
+ *         ERR_MEM if private data couldn't be allocated
+ *         any other err_t on error
+ */
+static err_t ethernetif_init(struct netif *netif)
+{
+    struct ethernetif *ethernetif;
+
+    LWIP_ASSERT("netif != NULL", (netif != NULL));
+
+    ethernetif = mem_malloc(sizeof(struct ethernetif));
+    if (ethernetif == NULL) {
+        LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_init: out of memory\n"));
+        return ERR_MEM;
+    }
+
+#if LWIP_NETIF_HOSTNAME
+    /* Initialize interface hostname */
+    netif->hostname = "lwip";
+#endif /* LWIP_NETIF_HOSTNAME */
+
+    /*
+     * Initialize the snmp variables and counters inside the struct netif.
+     * The last argument should be replaced with your link speed, in units
+     * of bits per second.
+     */
+    MIB2_INIT_NETIF(netif, snmp_ifType_ethernet_csmacd, LINK_SPEED_OF_YOUR_NETIF_IN_BPS);
+
+    netif->state = ethernetif;
+    netif->name[0] = IFNAME0;
+    netif->name[1] = IFNAME1;
+    /* We directly use etharp_output() here to save a function call.
+     * You can instead declare your own function an call etharp_output()
+     * from it if you have to do some checks before sending (e.g. if link
+     * is available...) */
+    netif->output = etharp_output;
+#if LWIP_IPV6
+    netif->output_ip6 = ethip6_output;
+#endif /* LWIP_IPV6 */
+    netif->linkoutput = low_level_output;
+
+    ethernetif->ethaddr = (struct eth_addr *)&(netif->hwaddr[0]);
+
+    /* initialize the hardware */
+    low_level_init(netif);
+
+    return ERR_OK;
+}
+
+/*
+ * This function should be called when a packet is ready to be read
+ * from the interface. It uses the function low_level_input() that
+ * should handle the actual reception of bytes from the network
+ * interface. Then the type of the received packet is determined and
+ * the appropriate input function is called.
+ *
+ * @param netif the lwip network interface structure for this ethernetif
+ */
+void ethernetif_input(struct netif *netif)
+{
+    struct ethernetif *ethernetif;
+    struct eth_hdr *ethhdr;
+    struct pbuf *p;
+
+    ethernetif = netif->state;
+
+    /* move received packet into a new pbuf */
+    p = low_level_input(netif);
+    /* if no packet could be read, silently ignore this */
+    if (p != NULL) {
+        /* pass all packets to ethernet_input, which decides what packets it supports */
+        if (netif->input(p, netif) != ERR_OK) {
+            LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_input: IP input error\n"));
+            pbuf_free(p);
+            p = NULL;
+        }
+    }
+}
+
+/*
+ * @brief  Initializes the lwIP stack
+ * @param  None
+ * @retval None
+ */
+void netifConfig(void)
+{
+    ip_addr_t ipaddr;
+    ip_addr_t netmask;
+    ip_addr_t gw;
+    
+#ifdef USE_DHCP
+    ip_addr_set_zero_ip4(&ipaddr);
+    ip_addr_set_zero_ip4(&netmask);
+    ip_addr_set_zero_ip4(&gw);
+#else
+    IP_ADDR4(&ipaddr,IP_ADDR0,IP_ADDR1,IP_ADDR2,IP_ADDR3);
+    IP_ADDR4(&netmask,NETMASK_ADDR0,NETMASK_ADDR1,NETMASK_ADDR2,NETMASK_ADDR3);
+    IP_ADDR4(&gw,GW_ADDR0,GW_ADDR1,GW_ADDR2,GW_ADDR3);
+#endif /* USE_DHCP */
+  
+    /* add the network interface */    
+    netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &tcpip_input);
+    
+    /*  Registers the default network interface. */
+    netif_set_default(&gnetif);
+  
+    if (netif_is_link_up(&gnetif))
+    {
+        /* When the netif is fully configured this function must be called.*/
+        netif_set_up(&gnetif);
+    }
+    else
+    {
+        /* When the netif link is down this function must be called */
+        netif_set_down(&gnetif);
+    }
 }
 
 #endif
