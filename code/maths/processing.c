@@ -15,6 +15,8 @@
 // Arctan implementation
 #include "atan.h"
 
+// Logging/debugging
+#include "../debug/logging.h"
 
 /*
  * IIR-filter coefficients
@@ -73,16 +75,23 @@ uint32_t filterAndDecimate(float32_t* data, uint32_t dataSize, uint16_t decFacto
 	// NOTE(klek): Should this be implemented in separate function to not have it run each time
 	//			   we enter here?
 	// Initialize the filter structure
-	arm_biquad_cascade_df2T_instance_f32 butterworth_f32;
+//	arm_biquad_cascade_df2T_instance_f32 butterworth_f32;
 	// This is temporary buffer for what?
-	float32_t stateBuffer[2 * N_STAGES];
-	arm_biquad_cascade_df2T_init_f32(&butterworth_f32, N_STAGES, (float32_t *)filterCoeff, stateBuffer);
+//	float32_t stateBuffer[2 * N_STAGES];
+//	arm_biquad_cascade_df2T_init_f32(&butterworth_f32, N_STAGES, (float32_t *)filterCoeff, stateBuffer);
 
 	// Do the filtering
 	// NOTE(klek): Here we must add some output vector. How?
-	arm_biquad_cascade_df2T_f32(&butterworth_f32, data, outData, dataSize);
+//	arm_biquad_cascade_df2T_f32(&butterworth_f32, data, outData, dataSize);
 
-
+	LOG("Printing the filtered vector: \n");
+/*	int n = 0;
+	while (n < FFT_SIZE )
+	{
+		LOG("%f + j%f , \n", outData[n], outData[n+1]);
+		n += 2;
+	}
+*/
 	// Decimation is currently done by the factor which is expected to be an even number
 	// The decimation simply removes every decFactor in the vector and returns same vector
 	// with a new "valid" size
@@ -94,9 +103,9 @@ uint32_t filterAndDecimate(float32_t* data, uint32_t dataSize, uint16_t decFacto
 		// Do we need to check boundaries?
 		if ( index < dataSize ) {
 			// Copy I-data
-			data[index++] = outData[decFactor];
+			data[index++] = data[decFactor];//outData[decFactor];
 			// Copy Q-data
-			data[index++] = outData[decFactor + 1];
+			data[index++] = data[decFactor + 1];//outData[decFactor + 1];
 		}
 	}
 
@@ -134,7 +143,7 @@ uint32_t phaseCalc(float32_t* data, uint32_t dataSize)
 }
 
 // FFT init seems to not be needed??
-arm_status fftProcess(float32_t* data)
+arm_status fftProcess(float32_t* data, float32_t* result, float32_t *maxValue, uint32_t* resIndex)
 {
 #if FFT_SIZE == 1024
 	arm_cfft_f32(&arm_cfft_sR_f32_len1024, data, FFT_INVERSE_FLAG, FFT_BIT_REVERSAL);
@@ -143,6 +152,12 @@ arm_status fftProcess(float32_t* data)
 #elif FFT_SIZE == 4096
 	arm_cfft_f32(&arm_cfft_sR_f32_len4096, data, FFT_INVERSE_FLAG, FFT_BIT_REVERSAL);
 #endif
+
+	// Calculate the complex magnitude of each bin
+	arm_cmplx_mag_f32(data, result, FFT_SIZE);
+
+	// Calculate and return the maxvalue at the corresponding bin
+	arm_max_f32(result, FFT_SIZE, maxValue, resIndex);
 	return ARM_MATH_SUCCESS;
 }
 

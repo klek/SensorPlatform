@@ -36,7 +36,7 @@
 void copyBuffers(uint32_t *inData, float32_t *outData, uint32_t sizeOfOutData);
 uint32_t filterAndDecimate(float32_t *inData, uint32_t dataSize, uint16_t decFactor);
 uint32_t phaseCalc(float32_t* data, uint32_t dataSize);
-arm_status fftProcess(float32_t *data);
+arm_status fftProcess(float32_t* data, float32_t* result, float32_t *maxValue, uint32_t* resIndex);
 arm_status filterData(void);
 
 

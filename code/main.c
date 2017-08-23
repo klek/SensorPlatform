@@ -56,7 +56,7 @@
 /* Private define ------------------------------------------------------------*/
 #define ADC_BUFFER_SIZE             (FFT_SIZE * 2)
 #define RING_BUFFER_SIZE			(FFT_SIZE)
-#define DECIMATION_FACTOR           16
+#define DECIMATION_FACTOR           1//16
 
 // Defines for the statusVector
 #define HALF_BUFFER_INT             (1 << 0)
@@ -190,11 +190,12 @@ int main(void)
 
 
 
-    int n = 0;
+/*    int n = 0;
     while ( n < 160 ){
         n++;
         LOG("The loopvalue is %i\n", n);
     }
+*/
 
     /*
      * Start both of the ADCs with associated buffers
@@ -267,6 +268,15 @@ int main(void)
             // Here we process data
         }
 
+        // Debugging
+        // Print the inData vector atm
+        int s = 0;
+/*        while ( s < ADC_BUFFER_SIZE/2 )
+        {
+        	LOG("%i: %f +j%f \n",s , inData[s], inData[s+1]);
+        	s += 2;
+        }
+*/
         // inData contains the new sampled data
         // This data needs to be filtered and decimated since we are looking for very low frequencies.
         // For the FFT to be accurate we need a resolution of 0.5 Hz
@@ -296,7 +306,7 @@ int main(void)
         /*
          * TODO(klek): Update the rotating buffer with the newly calculated values
          */
-        circMultiPush(&workData, (struct complexData *)inData, validItems);
+        circMultiPush(&workData, (struct complexData *)inData, validItems/2);
 
         /*
          * TODO(klek): When the ringBuffer has been filled, we should copy data to
@@ -318,9 +328,26 @@ int main(void)
          *              unless we do this some other way.
          *              Also can we implement some sort of ringbuffer to not have to copy data
          *              more than once?
+         *
+         * NOTE(klek): THIS SHOULD BE FIXED NOW!!
          */
         // Process data through FFT
-        //fftProcess((float32_t*)inData);
+        //
+        float32_t maxVal;
+        uint32_t resIndex;
+        fftProcess((float32_t*)fftInData, fftResult, &maxVal, &resIndex);
+
+        LOG("Max value of %f at bin %lu\n", maxVal, resIndex);
+
+        // Debugging
+        // Print the inData vector atm
+        s = 0;
+        while ( s < FFT_SIZE/2 )
+        {
+        	LOG("%i: %f +j%f \n",s , fftResult[s], fftResult[s+1]);
+        	s += 2;
+        }
+
 
         /*
          * NOTE(klek):  The processing flow should be as follows after
@@ -332,7 +359,7 @@ int main(void)
          *              After filtering and decimation of the data, we can start processing it
          *              by doing arctangent calculation and also follow that up with FFT
          */
-        LOG("We reached interrupt routine %lu times since last\n", interrupted);
+//        LOG("We reached interrupt routine %lu times since last\n", interrupted);
         interrupted = 0;
     }
 }

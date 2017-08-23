@@ -162,7 +162,7 @@ uint32_t circMultiRead(struct circularBuffer *buff, struct complexData *data, ui
  */
 uint32_t circMultiPush(struct circularBuffer *buff, struct complexData *data, uint32_t howMany)
 {
-    // So we are fillin the buffer at the head
+    // So we are filling the buffer at the head
     // And when the buffer is full we simply move both head and tail for each new value we input
 
     // However this doesn't mean that the buffer was full when we arrived to this function.
