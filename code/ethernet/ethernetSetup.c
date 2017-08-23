@@ -6,17 +6,21 @@
    $Notes:   
 ********************************************************************/
 
-#if 0
+#if 1
 
 #include "ethernetSetup.h"
+
+#include "string.h"
 
 #include "stm32f7xx_hal.h"
 #include "stm32f7xx_nucleo_144.h"
 
 #include "lwip/opt.h"
+#include "lwip/init.h"
 #include "lwip/timeouts.h"
-//#include "netif/ethernet.h"
-//#include "netif/etharp.h"
+#include "lwip/netif.h"
+#include "netif/ethernet.h"
+#include "netif/etharp.h"
 
 // For debug messages
 #include "../debug/logging.h"
@@ -118,7 +122,7 @@ void HAL_ETH_MspInit(ETH_HandleTypeDef *heth)
     HAL_NVIC_EnableIRQ(ETH_IRQn);
 
     // Enable the Ethernet clock
-    __HAL_RCC_ET_CLK_ENABLE();
+    __HAL_RCC_ETH_CLK_ENABLE();
 
     // Output the HSE clock (should be 25 MHz) on MCO pin (PA8) to clock the physical device
     HAL_RCC_MCOConfig(RCC_MCO1, RCC_MCO1SOURCE_PLLCLK, RCC_MCODIV_4);
@@ -133,7 +137,7 @@ void HAL_ETH_RxCpltCallback(ETH_HandleTypeDef *heth)
 /*
  * Low Level initialization of the Ethernet device
  */
-static void low_level_init(struct netif *netif)
+static void low_level_init(struct netif *netif, ETH_HandleTypeDef* EthHandle)
 {
     uint8_t macAddress[6] =
         {
@@ -145,18 +149,18 @@ static void low_level_init(struct netif *netif)
             MAC_ADDR5
         };
 
-    EthHandle.Instance = ETH;
-    EthHandle.Init.MACAddr = macAddress;
-    EthHandle.Init.AutoNegotiation = ETH_AUTONEGOTIATION_ENABLE;
-    EthHandle.Init.Speed = ETH_SPEED_100M;
-    EthHandle.Init.DuplexMode = ETH_MODE_FULLDUPLEX;
-    EthHandle.Init.MediaInterface = ETH_MEDIA_INTERFACE_RMII;
-    EthHandle.Init.RxMode = ETH_RXINTERRUPT_MODE;
-    EthHandle.Init.ChecksumMode = ETH_CHECKSUM_BY_HARDWARE;
-    EthHandle.Init.PhyAddress = LAN8742A_PHY_ADDRESS;
+    EthHandle->Instance = ETH;
+    EthHandle->Init.MACAddr = macAddress;
+    EthHandle->Init.AutoNegotiation = ETH_AUTONEGOTIATION_ENABLE;
+    EthHandle->Init.Speed = ETH_SPEED_100M;
+    EthHandle->Init.DuplexMode = ETH_MODE_FULLDUPLEX;
+    EthHandle->Init.MediaInterface = ETH_MEDIA_INTERFACE_RMII;
+    EthHandle->Init.RxMode = ETH_RXINTERRUPT_MODE;
+    EthHandle->Init.ChecksumMode = ETH_CHECKSUM_BY_HARDWARE;
+    EthHandle->Init.PhyAddress = LAN8742A_PHY_ADDRESS;
 
     // Configure the ethernet peripheral
-    if ( HAL_ETH_Init(&EthHandle) == HAL_OK )
+    if ( HAL_ETH_Init(EthHandle) == HAL_OK )
     {
         // Set the netif link flag
         netif->flags |= NETIF_FLAG_LINK_UP;
@@ -165,12 +169,12 @@ static void low_level_init(struct netif *netif)
     // Initialize the TX descriptors list: Chain Mode
     // NOTE(klek): This must be checked in main.c
     //             Need to setup memory space for this
-    HAL_ETH_DMATxDescListInit(&EthHandle, DMATxDscrTab, &Tx_Buff[0][0], ETH_TXBUFNB);
+    HAL_ETH_DMATxDescListInit(EthHandle, DMATxDscrTab, &Tx_Buff[0][0], ETH_TXBUFNB);
 
     // Initialize the RX descriptors list: Chain mode
     // NOTE(klek): This must be checked in main.c
     //             Need to setup memory space for this
-    HAL_ETH_DMARxDescListInit(&EthHandle, DMARxDscrTab, &Rx_Buff[0][0], ETH_RXBUFNB);
+    HAL_ETH_DMARxDescListInit(EthHandle, DMARxDscrTab, &Rx_Buff[0][0], ETH_RXBUFNB);
 
     // Set netif maximum transfer unit
     netif->mtu = 1500;
@@ -179,24 +183,24 @@ static void low_level_init(struct netif *netif)
     netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
     
     // Enable MAC and DMA transmission and reception
-    HAL_ETH_Start(&EthHandle);
+    HAL_ETH_Start(EthHandle);
 }
 
 /*
  * Low level function to send a packet
  */
-static err_t low_level_output(struct netif* netif, struct pbuf* p)
+static err_t low_level_output(struct netif* netif, struct pbuf* p, ETH_HandleTypeDef* EthHandle)
 {
     err_t errval;
     struct pbuf *q;
-    uint8_t *buffer = (uint8_t *)(EthHandle.TxDesc->Buffer1Addr);
+    uint8_t *buffer = (uint8_t *)(EthHandle->TxDesc->Buffer1Addr);
     __IO ETH_DMADescTypeDef *DmaTxDesc;
     uint32_t framelength = 0;
     uint32_t bufferoffset = 0;
     uint32_t byteslefttocopy = 0;
     uint32_t payloadoffset = 0;
 
-    DmaTxDesc = EthHandle.TxDesc;
+    DmaTxDesc = EthHandle->TxDesc;
     bufferoffset = 0;
   
     // copy frame from pbufs to driver buffers
@@ -246,29 +250,29 @@ static err_t low_level_output(struct netif* netif, struct pbuf* p)
     // Clean and Invalidate data cache
     SCB_CleanInvalidateDCache ();  
     // Prepare transmit descriptors to give to DMA
-    HAL_ETH_TransmitFrame(&EthHandle, framelength);
+    HAL_ETH_TransmitFrame(EthHandle, framelength);
   
     errval = ERR_OK;
     
 error:
     
     // When Transmit Underflow flag is set, clear it and issue a Transmit Poll Demand to resume transmission
-    if ((EthHandle.Instance->DMASR & ETH_DMASR_TUS) != (uint32_t)RESET)
+    if ((EthHandle->Instance->DMASR & ETH_DMASR_TUS) != (uint32_t)RESET)
     {
         // Clear TUS ETHERNET DMA flag
-        EthHandle.Instance->DMASR = ETH_DMASR_TUS;
+        EthHandle->Instance->DMASR = ETH_DMASR_TUS;
         
         // Resume DMA transmission
-        EthHandle.Instance->DMATPDR = 0;
+        EthHandle->Instance->DMATPDR = 0;
     }
     return errval;
 
 }
 
 /*
- * Low level function to recieve a packet
+ * Low level function to receive a packet
  */
-static struct pbuf* low_level_input(struct netif* netif)
+static struct pbuf* low_level_input(struct netif* netif, ETH_HandleTypeDef* EthHandle)
 {
     struct pbuf *p = NULL, *q = NULL;
     uint16_t len = 0;
@@ -280,12 +284,12 @@ static struct pbuf* low_level_input(struct netif* netif)
     uint32_t i=0;
   
     /* get received frame */
-    if(HAL_ETH_GetReceivedFrame_IT(&EthHandle) != HAL_OK)
+    if(HAL_ETH_GetReceivedFrame_IT(EthHandle) != HAL_OK)
         return NULL;
     
     /* Obtain the size of the packet and put it into the "len" variable. */
-    len = EthHandle.RxFrameInfos.length;
-    buffer = (uint8_t *)EthHandle.RxFrameInfos.buffer;
+    len = EthHandle->RxFrameInfos.length;
+    buffer = (uint8_t *)EthHandle->RxFrameInfos.buffer;
     
     if (len > 0)
     {
@@ -298,7 +302,7 @@ static struct pbuf* low_level_input(struct netif* netif)
     
     if (p != NULL)
     {
-        dmarxdesc = EthHandle.RxFrameInfos.FSRxDesc;
+        dmarxdesc = EthHandle->RxFrameInfos.FSRxDesc;
         bufferoffset = 0;
         
         for(q = p; q != NULL; q = q->next)
@@ -329,24 +333,24 @@ static struct pbuf* low_level_input(struct netif* netif)
     
     /* Release descriptors to DMA */
     /* Point to first descriptor */
-    dmarxdesc = EthHandle.RxFrameInfos.FSRxDesc;
+    dmarxdesc = EthHandle->RxFrameInfos.FSRxDesc;
     /* Set Own bit in Rx descriptors: gives the buffers back to DMA */
-    for (i=0; i< EthHandle.RxFrameInfos.SegCount; i++)
+    for (i=0; i< EthHandle->RxFrameInfos.SegCount; i++)
     {  
         dmarxdesc->Status |= ETH_DMARXDESC_OWN;
         dmarxdesc = (ETH_DMADescTypeDef *)(dmarxdesc->Buffer2NextDescAddr);
     }
     
     /* Clear Segment_Count */
-    EthHandle.RxFrameInfos.SegCount =0;
+    EthHandle->RxFrameInfos.SegCount =0;
     
     /* When Rx Buffer unavailable flag is set: clear it and resume reception */
-    if ((EthHandle.Instance->DMASR & ETH_DMASR_RBUS) != (uint32_t)RESET)  
+    if ((EthHandle->Instance->DMASR & ETH_DMASR_RBUS) != (uint32_t)RESET)
     {
         /* Clear RBUS ETHERNET DMA flag */
-        EthHandle.Instance->DMASR = ETH_DMASR_RBUS;
+        EthHandle->Instance->DMASR = ETH_DMASR_RBUS;
         /* Resume DMA reception */
-        EthHandle.Instance->DMARPDR = 0;
+        EthHandle->Instance->DMARPDR = 0;
     }
     return p;
     
@@ -364,17 +368,17 @@ static struct pbuf* low_level_input(struct netif* netif)
  *         ERR_MEM if private data couldn't be allocated
  *         any other err_t on error
  */
-static err_t ethernetif_init(struct netif *netif)
+static err_t ethernetif_init(struct netif *netif, ETH_HandleTypeDef* EthHandle)
 {
-    struct ethernetif *ethernetif;
+//    struct ethernetif *ethernetif;
 
     LWIP_ASSERT("netif != NULL", (netif != NULL));
 
-    ethernetif = mem_malloc(sizeof(struct ethernetif));
-    if (ethernetif == NULL) {
-        LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_init: out of memory\n"));
-        return ERR_MEM;
-    }
+//    ethernetif = mem_malloc(sizeof(struct ethernetif));
+//    if (ethernetif == NULL) {
+//        LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_init: out of memory\n"));
+//        return ERR_MEM;
+//    }
 
 #if LWIP_NETIF_HOSTNAME
     /* Initialize interface hostname */
@@ -386,9 +390,9 @@ static err_t ethernetif_init(struct netif *netif)
      * The last argument should be replaced with your link speed, in units
      * of bits per second.
      */
-    MIB2_INIT_NETIF(netif, snmp_ifType_ethernet_csmacd, LINK_SPEED_OF_YOUR_NETIF_IN_BPS);
+//    MIB2_INIT_NETIF(netif, snmp_ifType_ethernet_csmacd, LINK_SPEED_OF_YOUR_NETIF_IN_BPS);
 
-    netif->state = ethernetif;
+//    netif->state = ethernetif;
     netif->name[0] = IFNAME0;
     netif->name[1] = IFNAME1;
     /* We directly use etharp_output() here to save a function call.
@@ -401,10 +405,10 @@ static err_t ethernetif_init(struct netif *netif)
 #endif /* LWIP_IPV6 */
     netif->linkoutput = low_level_output;
 
-    ethernetif->ethaddr = (struct eth_addr *)&(netif->hwaddr[0]);
+//    ethernetif->ethaddr = (struct eth_addr *)&(netif->hwaddr[0]);
 
     /* initialize the hardware */
-    low_level_init(netif);
+    low_level_init(netif, EthHandle);
 
     return ERR_OK;
 }
@@ -418,16 +422,16 @@ static err_t ethernetif_init(struct netif *netif)
  *
  * @param netif the lwip network interface structure for this ethernetif
  */
-void ethernetif_input(struct netif *netif)
+void ethernetif_input(struct netif *netif, ETH_HandleTypeDef* EthHandle)
 {
-    struct ethernetif *ethernetif;
-    struct eth_hdr *ethhdr;
+    //struct ethernetif *ethernetif;
+    //struct eth_hdr *ethhdr;
     struct pbuf *p;
 
-    ethernetif = netif->state;
+    //ethernetif = netif->state;
 
     /* move received packet into a new pbuf */
-    p = low_level_input(netif);
+    p = low_level_input(netif, EthHandle);
     /* if no packet could be read, silently ignore this */
     if (p != NULL) {
         /* pass all packets to ethernet_input, which decides what packets it supports */
@@ -444,7 +448,7 @@ void ethernetif_input(struct netif *netif)
  * @param  None
  * @retval None
  */
-void netifConfig(void)
+void netifConfig(struct netif* gnetif)
 {
     ip_addr_t ipaddr;
     ip_addr_t netmask;
@@ -461,20 +465,21 @@ void netifConfig(void)
 #endif /* USE_DHCP */
   
     /* add the network interface */    
-    netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &tcpip_input);
+    //netif_add(gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &tcpip_input);
+    netif_add(gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernetif_input);
     
     /*  Registers the default network interface. */
-    netif_set_default(&gnetif);
+    netif_set_default(gnetif);
   
-    if (netif_is_link_up(&gnetif))
+    if (netif_is_link_up(gnetif))
     {
         /* When the netif is fully configured this function must be called.*/
-        netif_set_up(&gnetif);
+        netif_set_up(gnetif);
     }
     else
     {
         /* When the netif link is down this function must be called */
-        netif_set_down(&gnetif);
+        netif_set_down(gnetif);
     }
 }
 
