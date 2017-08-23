@@ -24,6 +24,9 @@
  *			So currently we are sampling about 10 times faster than needed
  *
  *			If we then use this delay between samples, can we reduce the sampling time even more?
+ *
+ *			The APB2 Clock has been divided by 16 now, which effectively have reduced the Sa/s
+ *			by 8, resulting in ~3.430 kSa/s
  */
 #define ADC_CLOCK						ADC_CLOCK_SYNC_PCLK_DIV8
 #define ADC_SAMPLING_TIME				ADC_SAMPLETIME_480CYCLES
