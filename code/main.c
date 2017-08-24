@@ -44,6 +44,11 @@
 #include "misc/complexBuffer.h"
 //#include "ethernet/ethernetSetup.h"
 
+
+// Includes for testing purposes
+#include "../testing/superPosSignal.h"
+#include "../testing/phaseShiftSignal.h"
+
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{
   */
@@ -248,8 +253,8 @@ int main(void)
             copyBuffers((uint32_t*)adcBuffer, (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
 
             // Print the ADCXValues
-            LOG("The current ADC_A-value is %f\t\t", inData[10] );
-            LOG("The current ADC_B-value is %f\n", inData[11] );
+//            LOG("The current ADC_A-value is %f\t\t", inData[10] );
+//            LOG("The current ADC_B-value is %f\n", inData[11] );
         }
         // Check status-vector for full buffer
         else if ( statusVector & FULL_BUFFER_INT )
@@ -260,8 +265,8 @@ int main(void)
             // Move last half of adcBuffer into processing buffer inData
             copyBuffers((uint32_t*)(adcBuffer + (ADC_BUFFER_SIZE/2)), (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
             // Print the ADCXValues
-            LOG("The current ADC_A-value is %f\t\t", inData[10] );
-            LOG("The current ADC_B-value is %f\n", inData[11] );
+//            LOG("The current ADC_A-value is %f\t\t", inData[10] );
+//            LOG("The current ADC_B-value is %f\n", inData[11] );
         }
         else
         {
@@ -322,6 +327,11 @@ int main(void)
         //LOG("The current ADC_A-value is %lu\t\t", inData[10] );
         //LOG("The current ADC_B-value is %lu\n", inData[11] );
 
+#ifdef TEST_FFT
+        // Testing the FFT with signal vector from matlab.
+        // This needs to be applied to the fftInData
+        memcpy(&fftIndata, superPosSignal, FFT_SIZE * 2);
+#endif
 
         /*
          * NOTE(klek):  When we process data through FFT the previous buffer will be overwritten

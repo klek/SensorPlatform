@@ -19,15 +19,20 @@ t = (0:myLen-1) * timePeriod;
 
 % Generating a superposition signal of the four frequencies
 a = 2 * pi * t;
-superPosSignal = 0.5*sin(a*LOW_FREQ) + 0.5*sin(a*MEDIUM_FREQ_1) + 0.5*sin(a*MEDIUM_FREQ_2) + 0.5*sin(a*HIGH_FREQ);
+superPosSignal_orig = 0.5*sin(a*LOW_FREQ) + 0.5*sin(a*MEDIUM_FREQ_1) + 0.5*sin(a*MEDIUM_FREQ_2) + 0.5*sin(a*HIGH_FREQ);
 
 % Plotting the inputsignal
 figure(1)
-plot(t,superPosSignal)
+plot(t,superPosSignal_orig)
 axis([0 1 -2 2])
 
+% Now add zeroes to the imaginary parts
+zero(1:2048) = zeros;
+superPosSignal(1:2:4096) = superPosSignal_orig;
+superPosSignal(2:2:4096) = zero;
+
 % Create a c-header file
-fd = fopen('superPosSignal.h', 'wt');
+fd = fopen('../testing/superPosSignal.h', 'wt');
 
 % Format the header file with includes
 fprintf(fd, '#include "arm_math.h"\n\n');
@@ -44,7 +49,7 @@ fprintf(fd, '\n};\n');
 fclose(fd);
 
 % Generating the phase shift signal to test arctangent calculation
-pskSignal = sin(superPosSignal);
+pskSignal = sin(superPosSignal_orig);
 
 % Plotting the phase shifted signal
 figure(2)
@@ -59,7 +64,7 @@ phaseShiftSignal(1:2:4096) = real(hilbertSig);
 phaseShiftSignal(2:2:4096) = imag(hilbertSig);
 
 % Create a c-header file
-fd = fopen('phaseShiftSignal.h', 'wt');
+fd = fopen('../testing/phaseShiftSignal.h', 'wt');
 
 % Format the header file with includes
 fprintf(fd, '#include "arm_math.h"\n\n');
