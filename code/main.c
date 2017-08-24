@@ -123,7 +123,7 @@ int main(void)
     // Might need 2 of these, one for first part of buffer and one for second
     // These could be moved to main
     float32_t inData[ADC_BUFFER_SIZE];
-    float32_t fftInData[FFT_SIZE];
+    float32_t fftInData[FFT_SIZE * 2];
     float32_t fftResult[FFT_SIZE];
 
     // The rotating buffer for data before FFT calculation
@@ -342,7 +342,7 @@ int main(void)
         // Debugging
         // Print the inData vector atm
         s = 0;
-        while ( s < FFT_SIZE/2 )
+        while ( s < FFT_SIZE )
         {
         	LOG("%i: %f +j%f \n",s , fftResult[s], fftResult[s+1]);
         	s += 2;
