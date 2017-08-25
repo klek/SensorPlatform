@@ -67,6 +67,8 @@
 #define HALF_BUFFER_INT             (1 << 0)
 #define FULL_BUFFER_INT             (1 << 1)
 
+#define TEST_FFT
+
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* ADC handler declaration */
@@ -330,7 +332,9 @@ int main(void)
 #ifdef TEST_FFT
         // Testing the FFT with signal vector from matlab.
         // This needs to be applied to the fftInData
-        memcpy(&fftIndata, superPosSignal, FFT_SIZE * 2);
+        memcpy(fftInData, superPosSignal, FFT_SIZE * 2);
+
+//        LOG("%f \n %f \n %f\n", fftInData[0], fftInData[1], fftInData[2]);
 #endif
 
         /*
@@ -350,13 +354,17 @@ int main(void)
         LOG("Max value of %f at bin %lu\n", maxVal, resIndex);
 
         // Debugging
-        // Print the inData vector atm
+        // Print the result to debugging terminal for capture in MATLAB
         s = 0;
+
+        LOG("[ %f; %f", fftResult[s], fftResult[s+1]);
+        s += 2;
         while ( s < FFT_SIZE )
         {
-        	LOG("%i: %f +j%f \n",s , fftResult[s], fftResult[s+1]);
+        	LOG(";\n%f; %f", fftResult[s], fftResult[s+1]);
         	s += 2;
         }
+        LOG(" ]; \n");
 
 
         /*

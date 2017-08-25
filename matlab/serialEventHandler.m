@@ -4,7 +4,8 @@ function serialEventHandler(obj,~,outputFile)
 bytes = get(obj, 'BytesAvailable');
 
 if ( bytes > 0 )
-    data = fread(obj);
+    %data = fread(obj);
+    data = fscanf(obj);
     fwrite(outputFile, data);
 end
 

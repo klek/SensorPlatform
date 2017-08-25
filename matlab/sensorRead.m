@@ -4,13 +4,14 @@ function sensorRead
 obj = serial('/dev/ttyACM0');
 
 % Open an output file to save data
-outputFile = fopen('../testing/output/out.txt', 'a');
+outputFile = fopen('../testing/output/out.txt', 'wt');
 
 % Setup settings for the device
 obj.BaudRate = 9600;
 obj.Parity = 'odd';
 obj.StopBits = 1;
 obj.DataBits = 7;
+obj.Timeout = 20;
 
 % Configure the callback
 obj.BytesAvailableFcnMode = 'byte';
@@ -20,7 +21,7 @@ obj.BytesAvailableFcn = {@serialEventHandler, outputFile};
 % Now open the serial connection
 fopen(obj);
 
-pause
+pause(30)
 
 % Close the serial connection
 fclose(obj);
