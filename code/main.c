@@ -351,12 +351,17 @@ int main(void)
         uint32_t resIndex;
         fftProcess((float32_t*)fftInData, fftResult, &maxVal, &resIndex);
 
+        /*
+         * Debugging
+         * Print the result to debugging terminal for capture in MATLAB
+         */
+        // Start by delimiting content in output
+//        LOG("#\n");
         LOG("Max value of %f at bin %lu\n", maxVal, resIndex);
 
-        // Debugging
-        // Print the result to debugging terminal for capture in MATLAB
+        // Second delimitation
+//        LOG("#\n");
         s = 0;
-
         LOG("[ %f; %f", fftResult[s], fftResult[s+1]);
         s += 2;
         while ( s < FFT_SIZE )
@@ -369,7 +374,7 @@ int main(void)
 
         /*
          * NOTE(klek):  The processing flow should be as follows after
-         *              interrupts have occured.
+         *              interrupts have occurred.
          *
          *              Data should be moved from DMA-buffers
          *              Data should be pre-processed before being saved elsewhere

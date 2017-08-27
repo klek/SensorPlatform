@@ -142,7 +142,14 @@ uint32_t phaseCalc(float32_t* data, uint32_t dataSize)
 	return 1;
 }
 
-// FFT init seems to not be needed??
+/*
+ * FFT processing function
+ *
+ * NOTE(klek): Should there be a hanning window applied to data before processing,
+ * 			   to get rid of spectrum leakage?
+ * 			   Eq: 0.5 - 0.5 * cos( 2 * pi * n / ( N - 1 ) )
+ * 			   This will be multiplied to each sample before processing then, maybe look-up table?
+ */
 arm_status fftProcess(float32_t* data, float32_t* result, float32_t *maxValue, uint32_t* resIndex)
 {
 #if FFT_SIZE == 1024

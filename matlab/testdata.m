@@ -22,9 +22,9 @@ a = 2 * pi * t;
 superPosSignal_orig = 0.5*sin(a*LOW_FREQ) + 0.5*sin(a*MEDIUM_FREQ_1) + 0.5*sin(a*MEDIUM_FREQ_2) + 0.5*sin(a*HIGH_FREQ);
 
 % Plotting the inputsignal
-figure(1)
-plot(t,superPosSignal_orig)
-axis([0 1 -2 2])
+%figure(1)
+%plot(t,superPosSignal_orig)
+%axis([0 1 -2 2])
 
 % Now add zeroes to the imaginary parts
 zero(1:2048) = zeros;
@@ -52,9 +52,9 @@ fclose(fd);
 pskSignal = sin(superPosSignal_orig);
 
 % Plotting the phase shifted signal
-figure(2)
-plot(t, pskSignal)
-axis([0 1 -2 2])
+%figure(2)
+%plot(t, pskSignal)
+%axis([0 1 -2 2])
 
 % The phaseShiftSignal needs to contain every other sample as a cosine of
 % the same wave, that is a 90 degree phaseshift
