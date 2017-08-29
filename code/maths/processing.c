@@ -163,7 +163,7 @@ arm_status fftProcess(float32_t* data, float32_t* result, float32_t *maxValue, u
 	// Calculate the complex magnitude of each bin
 	arm_cmplx_mag_f32(data, result, FFT_SIZE);
 
-	// Calculate and return the maxvalue at the corresponding bin
+	// Calculate and return the max-value at the corresponding bin
 	arm_max_f32(result, FFT_SIZE, maxValue, resIndex);
 	return ARM_MATH_SUCCESS;
 }
