@@ -15,13 +15,19 @@
 // Arctan implementation
 #include "atan.h"
 
+// Hann window coefficients
+#include "hannCoeff.h"
+
+// Butterworth filter coefficients
+#include "butterFilterCoeff.h"
+
 // Logging/debugging
 #include "../debug/logging.h"
 
 /*
  * IIR-filter coefficients
  */
-static const float32_t filterCoeff[] =
+/*static const float32_t filterCoeff[] =
 {
 		0.0004,			// b10
 		0.0004,			// b11
@@ -33,7 +39,7 @@ static const float32_t filterCoeff[] =
 		1.0000,			// b22
 	   -1.8362,			// a21
 		0.8580			// a22
-};
+};*/
 
 /*
  * 	Function to copy data from inData buffer
@@ -152,6 +158,33 @@ uint32_t phaseCalc(float32_t* data, uint32_t dataSize)
  */
 arm_status fftProcess(float32_t* data, float32_t* result, float32_t *maxValue, uint32_t* resIndex)
 {
+#if (USE_HANN_WINDOW)
+	// Adding a Hann window to the input data
+	int i,j;
+	char j_up = 1;
+	for (i = 0, j = 0; i < FFT_SIZE; i++) {
+		data[i * 2] = data[i * 2] * hannCoeff[j];
+		// Check if we reach half of the hann-vector
+		if ( j != (FFT_SIZE / 2) ) {
+			if ( j_up == 1 )
+			{
+				j++;
+			}
+			else
+			{
+				j--;
+			}
+		}
+		else
+		{
+			if ( j_up == 0 )
+				j--;
+			else
+				j_up = 0;
+		}
+	}
+#endif
+
 #if FFT_SIZE == 1024
 	arm_cfft_f32(&arm_cfft_sR_f32_len1024, data, FFT_INVERSE_FLAG, FFT_BIT_REVERSAL);
 #elif FFT_SIZE == 2048

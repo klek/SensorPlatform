@@ -22,6 +22,7 @@
 #define FFT_SIZE					2048
 #define FFT_BIT_REVERSAL			1
 #define FFT_INVERSE_FLAG			0				// We are doing forward transform
+#define USE_HANN_WINDOW				1				// Use a Hann Window before processing
 
 /*
  * Structs

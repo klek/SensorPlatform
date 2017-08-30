@@ -25,7 +25,7 @@ coeffs = sos(:,[1 2 3 5 6])
 coeffs = [coeffs(1,:) coeffs(2,:)]
 
 % Create a file to hold the filter coefficients
-fd = fopen('filterCoeff.h','wt');
+fd = fopen('../code/maths/butterFilterCoeff.h','wt');
 
 % Format the header file with includes
 fprintf(fd, '#include "arm_math.h"\n\n');
