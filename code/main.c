@@ -347,9 +347,9 @@ int main(void)
          */
         // Process data through FFT
         //
-        float32_t maxVal;
-        uint32_t resIndex;
-        fftProcess((float32_t*)fftInData, fftResult, &maxVal, &resIndex);
+        float32_t maxVal[NR_OF_PEAKS];
+        uint32_t resIndex[NR_OF_PEAKS];
+        fftProcess((float32_t*)fftInData, fftResult, maxVal, resIndex);
 
         /*
          * Debugging
@@ -357,16 +357,22 @@ int main(void)
          */
         // Start by delimiting content in output
 //        LOG("#\n");
-        LOG("Max value of %f at bin %lu\n", maxVal, resIndex);
+        for (s = 0; s < NR_OF_PEAKS; s++)
+        {
+        	LOG("Max value of %f at bin %lu\n", maxVal[s], resIndex[s]);
+        }
 
         // Second delimitation
 //        LOG("#\n");
         s = 0;
         LOG("[ %f; %f", fftResult[s], fftResult[s+1]);
+//        LOG("[ %f; %f", fftInData[s], fftInData[s+1]);
         s += 2;
         while ( s < FFT_SIZE )
+//		while ( s < (FFT_SIZE * 2) )
         {
         	LOG(";\n%f; %f", fftResult[s], fftResult[s+1]);
+//        	LOG(";\n%f; %f", fftInData[s], fftInData[s+1]);
         	s += 2;
         }
         LOG(" ]; \n");

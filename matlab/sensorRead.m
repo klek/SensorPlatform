@@ -1,4 +1,4 @@
-function sensorRead
+function signal = sensorRead
 
 % Create a serial connection
 obj = serial('/dev/ttyACM0');

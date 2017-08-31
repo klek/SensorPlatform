@@ -151,40 +151,54 @@ uint32_t phaseCalc(float32_t* data, uint32_t dataSize)
 /*
  * FFT processing function
  *
+ * Calculates the frequency spectrum of the input signal in place.
+ *
+ * data:		In and output vector contain the signal data before
+ * 				processing and the 2-sided spectrum
+ * 				after processing. Expected length is FFT_SIZE * 2.
+ * result:		Output vector containing the complex magnitude spectrum
+ * 				of the signal. Expected length is FFT_SIZE * 2.
+ * maxValue:	Output vector containing peak-values in order highest->lowest.
+ * 				Expected length is NR_OF_PEAKS
+ * resIndex:	Output vector containing indices for the peak-values in order
+ * 				highest->lowest.
+ * 				Expected length is NR_OF_PEAKS
+ *
  * NOTE(klek): Should there be a hanning window applied to data before processing,
  * 			   to get rid of spectrum leakage?
  * 			   Eq: 0.5 - 0.5 * cos( 2 * pi * n / ( N - 1 ) )
  * 			   This will be multiplied to each sample before processing then, maybe look-up table?
  */
-arm_status fftProcess(float32_t* data, float32_t* result, float32_t *maxValue, uint32_t* resIndex)
+arm_status fftProcess(float32_t* data, float32_t* result, float32_t* maxValue, uint32_t* resIndex)
 {
 #if (USE_HANN_WINDOW)
 	// Adding a Hann window to the input data
 	int i,j;
-	char j_up = 1;
-	for (i = 0, j = 0; i < FFT_SIZE; i++) {
-		data[i * 2] = data[i * 2] * hannCoeff[j];
-		// Check if we reach half of the hann-vector
-		if ( j != (FFT_SIZE / 2) ) {
-			if ( j_up == 1 )
-			{
-				j++;
-			}
-			else
-			{
-				j--;
-			}
-		}
-		else
-		{
-			if ( j_up == 0 )
-				j--;
-			else
-				j_up = 0;
-		}
+	// Grab the lenght of the hann window
+	int length = sizeof(hannCoeff) / sizeof(hannCoeff[0]);
+
+	// Debugging
+//	LOG("Length of hannWindow / 2 = %d\n", length);
+
+	// Smooth the first part of the vector
+	for (i = 0, j = 0; i < length; i++)
+	{
+		data[i * 2] = data[i * 2] * hannCoeff[i];
+//		LOG("Value of i = %d\n", i);
+	}
+
+	// Smooth the last part of the vector
+	for (i = 0; i < length; i++)
+	{
+		j = ((FFT_SIZE * 2) - 2) - (i * 2);
+		data[j] = data[j] * hannCoeff[i];
+//		LOG("Value of i = %d\n", j);
 	}
 #endif
 
+	/*
+	 * Calculate the frequency spectrum of the signal
+	 */
 #if FFT_SIZE == 1024
 	arm_cfft_f32(&arm_cfft_sR_f32_len1024, data, FFT_INVERSE_FLAG, FFT_BIT_REVERSAL);
 #elif FFT_SIZE == 2048
@@ -193,11 +207,56 @@ arm_status fftProcess(float32_t* data, float32_t* result, float32_t *maxValue, u
 	arm_cfft_f32(&arm_cfft_sR_f32_len4096, data, FFT_INVERSE_FLAG, FFT_BIT_REVERSAL);
 #endif
 
+	// Scale down the result with the length of the FFT
+	int s = 0;
+	for( ; s < FFT_SIZE * 2; s++)
+	{
+		data[s] = data[s] / FFT_SIZE;
+	}
 	// Calculate the complex magnitude of each bin
 	arm_cmplx_mag_f32(data, result, FFT_SIZE);
 
-	// Calculate and return the max-value at the corresponding bin
-	arm_max_f32(result, FFT_SIZE, maxValue, resIndex);
+	/*
+	 * The spectrum is here two sided and contains real values, with the highest
+	 * frequency in the middle and the lowest frequencies at the sides.
+	 * Add these sides together!
+	 */
+	for (s = 0; s < FFT_SIZE / 2; s++)
+	{
+		// Add the results together, skipping the first bin
+		result[s + 1] += result[(FFT_SIZE - 1) - s];
+		// Set the end side to zero
+		result[(FFT_SIZE - 1) - s] = 0;
+	}
+
+	/*
+	 * Do we need too adjust low frequency bins somehow?
+	 */
+/*	for (s = 0; s < NR_OF_LOW_BINS; s++)
+	{
+		// Do some magic with low bins here!
+	}*/
+
+
+	/*
+	 * Calculate the specified amount of highest peaks of the signal
+	 */
+	s = 0;
+	for ( ; s < NR_OF_PEAKS; s++)
+	{
+		// Calculate and return the max-value at the corresponding bin
+		arm_max_f32(result, FFT_SIZE/2, &maxValue[s], &resIndex[s]);
+		// Temporary remove this value from the result vector
+		// Since we already have it saved in maxValue
+		result[resIndex[s]] = 0;
+	}
+
+	// Restore all values
+	for (s = 0; s < NR_OF_PEAKS; s++)
+	{
+		result[resIndex[s]] = maxValue[s];
+	}
+
 	return ARM_MATH_SUCCESS;
 }
 

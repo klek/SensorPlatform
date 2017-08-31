@@ -22,7 +22,9 @@
 #define FFT_SIZE					2048
 #define FFT_BIT_REVERSAL			1
 #define FFT_INVERSE_FLAG			0				// We are doing forward transform
-#define USE_HANN_WINDOW				1				// Use a Hann Window before processing
+#define USE_HANN_WINDOW				0				// If 1 use a Hann Window before processing
+#define NR_OF_PEAKS					5				// The amount of peaks that should be found in the result
+#define NR_OF_LOW_BINS				8				// The number of low bins to adjust amplitude for
 
 /*
  * Structs
@@ -37,7 +39,7 @@
 void copyBuffers(uint32_t *inData, float32_t *outData, uint32_t sizeOfOutData);
 uint32_t filterAndDecimate(float32_t *inData, uint32_t dataSize, uint16_t decFactor);
 uint32_t phaseCalc(float32_t* data, uint32_t dataSize);
-arm_status fftProcess(float32_t* data, float32_t* result, float32_t *maxValue, uint32_t* resIndex);
+arm_status fftProcess(float32_t* data, float32_t* result, float32_t* maxValue, uint32_t* resIndex);
 arm_status filterData(void);
 
 
