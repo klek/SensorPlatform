@@ -61,15 +61,22 @@ signal = temp2{1}';
 figure(1)
 fftSpectrum(signal, 0);
 title('FFT spectrum');
-ylabel('Magnitude');
+ylabel('Magnitude [V]');
 xlabel('Frequency [Hz]');
 
 % Plot the source vector as reference
 [t1, t2] = testdata;
 figure(2)
 fftSpectrum(t1, 1);
-title('FFT Spectrum');
-ylabel('Magnitude');
+title('FFT Spectrum (only FFT)');
+ylabel('Magnitude [V]');
 xlabel('Frequency [Hz]');
 
+% Calculate the arctan reference signal
+phaseShift = atan2(t2(2:2:end),t2(1:2:end))
+figure(3)
+fftSpectrum(t2, 1);
+title('FFT Spectrum (arctan demodulation)');
+ylabel('Magnitude [V]');
+xlabel('Frequency [Hz]');
 end

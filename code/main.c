@@ -67,7 +67,8 @@
 #define HALF_BUFFER_INT             (1 << 0)
 #define FULL_BUFFER_INT             (1 << 1)
 
-#define TEST_FFT
+#define TEST_ARCTAN
+//#define TEST_FFT
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -305,6 +306,12 @@ int main(void)
         // inData can now be copied to the fftInData...
         LOG("New buffer contains %lu valid items\n", validItems);
 
+#ifdef TEST_ARCTAN
+        // Testing the arctan implementation with a signal
+        // vector from matlab
+        memcpy(inData, phaseShiftSignal, FFT_SIZE * 2);
+#endif
+
         /*
          * TODO(klek): Arctangent calculation of the valid items in the buffer
          */
@@ -325,6 +332,11 @@ int main(void)
             circMultiRead(&workData, (struct complexData *)fftInData, FFT_SIZE);
         }
         
+#ifdef TEST_ARCTAN
+        // Copy phase-calculated data into fftInData
+        memcpy(fftInData, inData, FFT_SIZE * 2);
+#endif
+
         // Print the ADCXValues
         //LOG("The current ADC_A-value is %lu\t\t", inData[10] );
         //LOG("The current ADC_B-value is %lu\n", inData[11] );
