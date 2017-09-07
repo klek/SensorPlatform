@@ -1,4 +1,4 @@
-function signal = sensorRead
+function [signal] = sensorRead
 
 % Create a serial connection
 obj = serial('/dev/ttyACM0');
@@ -55,12 +55,13 @@ temp1 = [ words{1}{index1 + 1: index2 - 1} ];
 temp2 = textscan(temp1, '%f', 'Delimiter', ';');
 
 % Put it into a vector
-signal = temp2{1}';
+signal = temp2{1}'
 
 % Display the data using fftSpectrum
 figure(1)
-fftSpectrum(signal, 0);
-title('FFT spectrum');
+%fftSpectrum(signal, 0);
+plotSpectrum(signal, 2048, 2048)
+title('FFT spectrum (DSP)');
 ylabel('Magnitude [V]');
 xlabel('Frequency [Hz]');
 
@@ -75,7 +76,7 @@ xlabel('Frequency [Hz]');
 % Calculate the arctan reference signal
 phaseShift = atan2(t2(2:2:end),t2(1:2:end))
 figure(3)
-fftSpectrum(t2, 1);
+fftSpectrum(phaseShift, 1);
 title('FFT Spectrum (arctan demodulation)');
 ylabel('Magnitude [V]');
 xlabel('Frequency [Hz]');

@@ -12,6 +12,7 @@ timeBase = 1;
 myLen = timeBase / timePeriod;
 %t = (0:myLen-1) * timePeriod;
 
+% Calculate the FFT
 Y = fft(inputSignal);
 
 if ( magFlag == 1 )

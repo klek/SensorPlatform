@@ -67,8 +67,8 @@
 #define HALF_BUFFER_INT             (1 << 0)
 #define FULL_BUFFER_INT             (1 << 1)
 
-#define TEST_ARCTAN
-//#define TEST_FFT
+//#define TEST_ARCTAN
+#define TEST_FFT
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -380,7 +380,7 @@ int main(void)
         LOG("[ %f; %f", fftResult[s], fftResult[s+1]);
 //        LOG("[ %f; %f", fftInData[s], fftInData[s+1]);
         s += 2;
-        while ( s < FFT_SIZE )
+        while ( s < FFT_SIZE / 2 )
 //		while ( s < (FFT_SIZE * 2) )
         {
         	LOG(";\n%f; %f", fftResult[s], fftResult[s+1]);

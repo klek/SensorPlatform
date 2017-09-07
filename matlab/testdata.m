@@ -2,7 +2,7 @@ function [superPosSignal, phaseShiftSignal] = testdata
 % Creating two samples testvectors to verify workings of the FFT, 
 % filter and arctangent calculation in the STM32F767Zi DSP
 
-% Some defines
+% Defining the frequencies
 LOW_FREQ = 10;
 MEDIUM_FREQ_1 = 40; % This should be lower than filter threshold
 MEDIUM_FREQ_2 = 50; % This should be higher than filter threshold

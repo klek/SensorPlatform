@@ -174,21 +174,21 @@ arm_status fftProcess(float32_t* data, float32_t* result, float32_t* maxValue, u
 #if (USE_HANN_WINDOW)
 	// Adding a Hann window to the input data
 	int i,j;
-	// Grab the lenght of the hann window
+	// Grab the length of the Hann window
 	int length = sizeof(hannCoeff) / sizeof(hannCoeff[0]);
 
 	// Debugging
 //	LOG("Length of hannWindow / 2 = %d\n", length);
 
 	// Smooth the first part of the vector
-	for (i = 0, j = 0; i < length; i++)
+	for (i = 0; i < length; i++)
 	{
 		data[i * 2] = data[i * 2] * hannCoeff[i];
 //		LOG("Value of i = %d\n", i);
 	}
 
 	// Smooth the last part of the vector
-	for (i = 0; i < length; i++)
+	for (i = 0, j = 0; i < length; i++)
 	{
 		j = ((FFT_SIZE * 2) - 2) - (i * 2);
 		data[j] = data[j] * hannCoeff[i];
@@ -232,14 +232,15 @@ arm_status fftProcess(float32_t* data, float32_t* result, float32_t* maxValue, u
 	/*
 	 * Do we need too adjust low frequency bins somehow?
 	 */
-/*	for (s = 0; s < NR_OF_LOW_BINS; s++)
+	for (s = 0; s < NR_OF_LOW_BINS; s++)
 	{
 		// Do some magic with low bins here!
-	}*/
+		result[s] = result[s] * 0.5;
+	}
 
 
 	/*
-	 * Calculate the specified amount of highest peaks of the signal
+	 * Calculate the specified amount of highest peaks in the signal
 	 */
 	s = 0;
 	for ( ; s < NR_OF_PEAKS; s++)

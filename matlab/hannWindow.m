@@ -1,10 +1,10 @@
-function hannWindow
+function hannWindow(L)
 % Creates Hann coefficients for a 64 sample vector
 % and writes half of them to the file hannCoeff.h
 % They are only for smoothing the edges of each data set
 
 % Defines the length
-L = 64;
+%L = 64;
 
 % The hann function is given by hann-matlab function
 hannCoeff = hann(L)'
