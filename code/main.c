@@ -67,8 +67,8 @@
 #define HALF_BUFFER_INT             (1 << 0)
 #define FULL_BUFFER_INT             (1 << 1)
 
-//#define TEST_ARCTAN
-#define TEST_FFT
+#define TEST_ARCTAN
+//#define TEST_FFT
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/

@@ -79,7 +79,7 @@ float32_t atan2TaylorApprox(float32_t x, float32_t y)
     // NOTE(klek): Something seems to be wrong with these equations??
     //             arctan(t) = t - t3/3 + t5/5 - t7/7+...
     //
-    //             arctan(t) = t * ( 1 - t2( 1/3 - t2( 1/5 -t2/7)))
+    //             arctan(t) = t * ( 1 - t2( 1/3 - t2( 1/5 - t2( 1/7 - t2/9))))
     // NOTE(klek): Can this be written in another way to reduce the multiplications?
     // Taylor approximation with special atan constants
     phi = ATAN_CONSTANT_5;
