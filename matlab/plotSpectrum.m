@@ -3,7 +3,7 @@ function plotSpectrum(inputSignal, fftLength, sampleRate)
 % for the specified fftLength and sampleRate
 
 % Get the length of the inputSignal
-signalLength = length(inputSignal)
+signalLength = length(inputSignal);
 
 % We need to create an array with corresponding length to
 % the inputSignal and ofc correct resolution.
@@ -17,7 +17,7 @@ signalLength = length(inputSignal)
 res = sampleRate / fftLength;
 
 % Create the frequency vector
-f = (0:res:signalLength - 1)
+f = (0:res:signalLength - 1);
 
 % Plot the signal
 plot(f, inputSignal)

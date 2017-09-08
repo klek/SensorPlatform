@@ -55,7 +55,7 @@ temp1 = [ words{1}{index1 + 1: index2 - 1} ];
 temp2 = textscan(temp1, '%f', 'Delimiter', ';');
 
 % Put it into a vector
-signal = temp2{1}'
+signal = temp2{1}';
 
 % Display the data using fftSpectrum
 figure(1)
@@ -74,8 +74,9 @@ ylabel('Magnitude [V]');
 xlabel('Frequency [Hz]');
 
 % Calculate the arctan taylor approx
+phaseShiftApprox = (1:length(t2)/2);
 for i = 1:length(t2)/2
-    phaseShiftApprox = atan2TaylorApprox(t2(2*i),t2(2*i - 1));
+    phaseShiftApprox(i) = atan2TaylorApprox(t2(2*i),t2(2*i - 1));
 end
 figure(3)
 fftSpectrum(phaseShiftApprox, 1);
@@ -84,7 +85,7 @@ ylabel('Magnitude [V]');
 xlabel('Frequency [Hz]');
 
 % Calculate the arctan reference signal
-phaseShift = atan2(t2(2:2:end),t2(1:2:end))
+phaseShift = atan2(t2(2:2:end),t2(1:2:end));
 figure(4)
 fftSpectrum(phaseShift, 1);
 title('FFT Spectrum (atan2)');
