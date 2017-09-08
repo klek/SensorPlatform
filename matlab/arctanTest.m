@@ -6,11 +6,11 @@ function arctanTest
 
 
 % Create two vectors
-y_param = (0:0.1:1.1);
+y_param = (0:0.01:1.1);
 x_param = ones(size(y_param));
 
 % Create the t-vector
-t =  (0:0.1:1.1);
+t =  (0:0.01:1.1);
 
 % Reference function from MATLAB is atan2
 ref_result = atan2(y_param, x_param);
@@ -44,7 +44,7 @@ end
 % Plot the result
 figure(1)
 plot(t, ref_result, t, homemade_result1(:,1), '--', t, homemade_result1(:,2), '--', t, homemade_result1(:,3), '--')
-legend('atan2', 'Taylor O(7)', 'Taylor O(9)', 'Taylor O(11)', 'Location', 'northwest')
+legend('atan2', 'Taylor O(5)', 'Taylor O(7)', 'Taylor O(9)', 'Location', 'northwest')
 title('Comparing atan2 to Taylor expansion')
 xlabel('t')
 ylabel('phi [rad]')
@@ -52,15 +52,18 @@ ylabel('phi [rad]')
 % Plot the result
 figure(2)
 plot(t, ref_result, t, homemade_result1(:,1), '--', t, homemade_result1(:,2), '--', t, homemade_result1(:,3), '--')
-legend('atan2', 'Taylor O(7)', 'Taylor O(9)', 'Taylor O(11)', 'Location', 'northwest')
+legend('atan2', 'Taylor O(5)', 'Taylor O(7)', 'Taylor O(9)', 'Location', 'northwest')
 title('Comparing atan2 to Taylor expansion [zoomed]')
 xlabel('t')
 ylabel('phi [rad]')
 axis([0.65 1.1 0.6 1])
 
 figure(3)
-plot(t, ref_result, t, homemade_result2, '--')
-legend('atan2', 'TaylorApprox', 'Location', 'northwest')
+plot(t, ref_result, t, homemade_result2, '--', t, homemade_result1(:,3), '--')
+legend('atan2', 'Taylor O(9)', 'TaylorApprox', 'Location', 'northwest')
+title('Comparison of atan2 to Taylor expansion and Taylor approximation')
+xlabel('t')
+ylabel('phi [rad]')
 %axis([0.5 1 0 0.9])
 
 figure(4)
