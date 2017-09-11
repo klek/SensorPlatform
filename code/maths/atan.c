@@ -92,5 +92,11 @@ float32_t atan2TaylorApprox(float32_t x, float32_t y)
     phi = t * phi;
     
     // Return value will be calculated angle plus the angleshift
-    return angleShift + phi;
+    phi = angleShift + phi;
+    if ( phi > PI )
+    {
+    	phi = phi - 2 * PI;
+    }
+    else
+    	return phi;
 }

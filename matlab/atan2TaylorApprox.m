@@ -59,4 +59,8 @@ phi = angle * phi;
 
 % Add the shifted angle to the result
 phi = angleShift + phi;
+
+if ( phi > pi )
+    phi = phi - 2*pi;
+end
 end
