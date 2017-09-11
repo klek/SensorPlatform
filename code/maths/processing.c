@@ -71,8 +71,6 @@ void copyBuffers(uint32_t* inData, float32_t* outData, uint32_t sizeOfOutData)
 uint32_t filterAndDecimate(float32_t* data, uint32_t dataSize, uint16_t decFactor)
 {
 	// Initialization of local variables
-	int saveVal = 0;
-	int index = 0;
 	float32_t outData[FFT_SIZE * 2];
 
 	// First data should be run through the IIR-filter
@@ -110,14 +108,16 @@ uint32_t filterAndDecimate(float32_t* data, uint32_t dataSize, uint16_t decFacto
 
 	// This will simply overwrite the existing value in a vector with the
 	// value we want to save
+	int index = 0;
+	int saveVal = 0;
 	for ( ; saveVal < dataSize; saveVal += 2*decFactor)
 	{
 		// Do we need to check boundaries?
 		if ( index < dataSize ) {
 			// Copy I-data
-			data[index++] = outData[decFactor];
+			data[index++] = outData[saveVal];
 			// Copy Q-data
-			data[index++] = outData[decFactor + 1];
+			data[index++] = outData[saveVal + 1];
 		}
 	}
 
