@@ -81,23 +81,29 @@ uint32_t filterAndDecimate(float32_t* data, uint32_t dataSize, uint16_t decFacto
 	// NOTE(klek): Should this be implemented in separate function to not have it run each time
 	//			   we enter here?
 	// Initialize the filter structure
-//	arm_biquad_cascade_df2T_instance_f32 butterworth_f32;
+	arm_biquad_cascade_df2T_instance_f32 butterworth_f32;
 	// This is temporary buffer for what?
-//	float32_t stateBuffer[2 * N_STAGES];
-//	arm_biquad_cascade_df2T_init_f32(&butterworth_f32, N_STAGES, (float32_t *)filterCoeff, stateBuffer);
+	float32_t stateBuffer[2 * N_STAGES];
+	arm_biquad_cascade_df2T_init_f32(&butterworth_f32, N_STAGES, (float32_t *)filterCoeff, stateBuffer);
 
 	// Do the filtering
 	// NOTE(klek): Here we must add some output vector. How?
-//	arm_biquad_cascade_df2T_f32(&butterworth_f32, data, outData, dataSize);
+	arm_biquad_cascade_df2T_f32(&butterworth_f32, data, outData, dataSize);
 
+	// Should move this debugging into main-file
 	LOG("Printing the filtered vector: \n");
-/*	int n = 0;
-	while (n < FFT_SIZE )
+	int n = 0;
+	// Delimiter
+    LOG("{ %f; %f", outData[n], outData[n+1]);
+    n += 2;
+	while (n < (FFT_SIZE * 2) )
 	{
-		LOG("%f + j%f , \n", outData[n], outData[n+1]);
+		LOG(";\n%f; %f", outData[n], outData[n+1]);
 		n += 2;
 	}
-*/
+	// Delimiter
+	LOG(" };\n");
+
 	// Decimation is currently done by the factor which is expected to be an even number
 	// The decimation simply removes every decFactor in the vector and returns same vector
 	// with a new "valid" size
@@ -109,9 +115,9 @@ uint32_t filterAndDecimate(float32_t* data, uint32_t dataSize, uint16_t decFacto
 		// Do we need to check boundaries?
 		if ( index < dataSize ) {
 			// Copy I-data
-			data[index++] = data[decFactor];//outData[decFactor];
+			data[index++] = outData[decFactor];
 			// Copy Q-data
-			data[index++] = data[decFactor + 1];//outData[decFactor + 1];
+			data[index++] = outData[decFactor + 1];
 		}
 	}
 

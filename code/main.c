@@ -67,7 +67,8 @@
 #define HALF_BUFFER_INT             (1 << 0)
 #define FULL_BUFFER_INT             (1 << 1)
 
-#define TEST_ARCTAN
+#define TEST_BUTTER
+//#define TEST_ARCTAN
 //#define TEST_FFT
 
 /* Private macro -------------------------------------------------------------*/
@@ -285,6 +286,11 @@ int main(void)
         	s += 2;
         }
 */
+
+#ifdef TEST_BUTTER
+        memcpy(inData, superPosSignal, FFT_SIZE * 2);
+#endif
+
         // inData contains the new sampled data
         // This data needs to be filtered and decimated since we are looking for very low frequencies.
         // For the FFT to be accurate we need a resolution of 0.5 Hz
@@ -315,7 +321,7 @@ int main(void)
         /*
          * TODO(klek): Arctangent calculation of the valid items in the buffer
          */
-        phaseCalc((float32_t*)inData, validItems);
+//        phaseCalc((float32_t*)inData, validItems);
 
         /*
          * TODO(klek): Update the rotating buffer with the newly calculated values
@@ -332,7 +338,7 @@ int main(void)
             circMultiRead(&workData, (struct complexData *)fftInData, FFT_SIZE);
         }
         
-#ifdef TEST_ARCTAN
+#if (defined(TEST_ARCTAN) || defined(TEST_BUTTER))
         // Copy phase-calculated data into fftInData
         memcpy(fftInData, inData, FFT_SIZE * 2);
 #endif
