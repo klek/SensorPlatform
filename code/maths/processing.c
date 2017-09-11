@@ -89,7 +89,7 @@ uint32_t filterAndDecimate(float32_t* data, uint32_t dataSize, uint16_t decFacto
 	arm_biquad_cascade_df2T_f32(&butterworth_f32, data, outData, dataSize);
 
 	// Should move this debugging into main-file
-	LOG("Printing the filtered vector: \n");
+/*	LOG("Printing the filtered vector: \n");
 	int n = 0;
 	// Delimiter
     LOG("{ %f; %f", outData[n], outData[n+1]);
@@ -101,7 +101,7 @@ uint32_t filterAndDecimate(float32_t* data, uint32_t dataSize, uint16_t decFacto
 	}
 	// Delimiter
 	LOG(" };\n");
-
+*/
 	// Decimation is currently done by the factor which is expected to be an even number
 	// The decimation simply removes every decFactor in the vector and returns same vector
 	// with a new "valid" size

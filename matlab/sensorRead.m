@@ -32,7 +32,7 @@ fclose(obj);
 fclose(outputFile);
 clear outputFile;
 
-% We want to open the textfile in readonly mode now to grab the data
+% We want to open the textfile in read-only mode now to grab the data
 % we want only
 outputFile = fopen('../testing/output/out.txt', 'rt');
 
@@ -45,8 +45,8 @@ fclose(outputFile);
 clear outputFile;
 
 % Now find where the matrix starts and ends
-index1 = find(strcmp(words{1}, '['))
-index2 = find(strcmp(words{1}, '];'))
+index1 = find(strcmp(words{1}, '['));
+index2 = find(strcmp(words{1}, '];'));
 
 % We now want all elements in between here
 temp1 = [ words{1}{index1 + 1: index2 - 1} ];

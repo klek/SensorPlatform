@@ -67,8 +67,8 @@
 #define HALF_BUFFER_INT             (1 << 0)
 #define FULL_BUFFER_INT             (1 << 1)
 
-//#define TEST_BUTTER
-#define TEST_ARCTAN
+#define TEST_BUTTER
+//#define TEST_ARCTAN
 //#define TEST_FFT
 
 /* Private macro -------------------------------------------------------------*/
@@ -277,18 +277,9 @@ int main(void)
             // Here we process data
         }
 
-        // Debugging
-        // Print the inData vector atm
-        int s = 0;
-/*        while ( s < ADC_BUFFER_SIZE/2 )
-        {
-        	LOG("%i: %f +j%f \n",s , inData[s], inData[s+1]);
-        	s += 2;
-        }
-*/
 
 #ifdef TEST_BUTTER
-        memcpy(inData, superPosSignal, (FFT_SIZE * 2)*sizeof(float32_t));
+        memcpy(inData, superPosSignal, ((FFT_SIZE * 2) * sizeof(float32_t)) );
 #endif
 
         // inData contains the new sampled data
@@ -304,6 +295,22 @@ int main(void)
         uint32_t validItems = 0;
         validItems = filterAndDecimate(inData, ADC_BUFFER_SIZE, DECIMATION_FACTOR);
 
+#ifdef TEST_BUTTER
+    	// Should move this debugging into main-file
+    	LOG("Printing the filtered vector: \n");
+    	int n = 0;
+    	// Delimiter
+        LOG("{ %f; %f", inData[n], inData[n+1]);
+        n += 2;
+    	while (n < (FFT_SIZE * 2) )
+    	{
+    		LOG(";\n%f; %f", inData[n], inData[n+1]);
+    		n += 2;
+    	}
+    	// Delimiter
+    	LOG(" };\n");
+#endif
+
         if ( validItems == 0 )
         {
             LOG("ERROR: Filtering and decimation results in zero new items\n");
@@ -315,7 +322,7 @@ int main(void)
 #ifdef TEST_ARCTAN
         // Testing the arctan implementation with a signal
         // vector from matlab
-        memcpy(inData, phaseShiftSignal, (FFT_SIZE * 2)*sizeof(float32_t));
+        memcpy(inData, phaseShiftSignal, ((FFT_SIZE * 2) * sizeof(float32_t)) );
 #endif
 
         /*
@@ -326,21 +333,21 @@ int main(void)
         /*
          * TODO(klek): Update the rotating buffer with the newly calculated values
          */
-//        circMultiPush(&workData, (struct complexData *)inData, validItems/2);
+        circMultiPush(&workData, (struct complexData *)inData, validItems/2);
 
         /*
          * TODO(klek): When the ringBuffer has been filled, we should copy data to
          *             fftInData buffer for FFT-processing.
          *             This needs some form of checking
          */
-//        if ( workData.filled == 1 )
-//        {
-//            circMultiRead(&workData, (struct complexData *)fftInData, FFT_SIZE);
-//        }
+        if ( workData.filled == 1 )
+        {
+            circMultiRead(&workData, (struct complexData *)fftInData, FFT_SIZE);
+        }
         
 #if (defined(TEST_ARCTAN) || defined(TEST_BUTTER))
         // Copy phase-calculated data into fftInData
-        memcpy(fftInData, inData, (FFT_SIZE * 2)*sizeof(float32_t));
+        memcpy(fftInData, inData, ((FFT_SIZE * 2) * sizeof(float32_t)) );
 #endif
 
         // Print the ADCXValues
@@ -350,7 +357,7 @@ int main(void)
 #ifdef TEST_FFT
         // Testing the FFT with signal vector from matlab.
         // This needs to be applied to the fftInData
-        memcpy(fftInData, superPosSignal, (FFT_SIZE * 2)*sizeof(float32_t));
+        memcpy(fftInData, superPosSignal, ((FFT_SIZE * 2) * sizeof(float32_t)) );
 
 //        LOG("%f \n %f \n %f\n", fftInData[0], fftInData[1], fftInData[2]);
 #endif
@@ -379,6 +386,7 @@ int main(void)
          */
         // Start by delimiting content in output
 //        LOG("#\n");
+        int s = 0;
         for (s = 0; s < NR_OF_PEAKS; s++)
         {
         	LOG("Max value of %f at bin %lu\n", maxVal[s], resIndex[s]);

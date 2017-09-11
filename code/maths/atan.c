@@ -93,10 +93,12 @@ float32_t atan2TaylorApprox(float32_t x, float32_t y)
     
     // Return value will be calculated angle plus the angleshift
     phi = angleShift + phi;
+
+    // Return a value between -pi to pi to not introduce offset
     if ( phi > PI )
     {
     	phi = phi - 2 * PI;
     }
-    else
-    	return phi;
+
+    return phi;
 }
