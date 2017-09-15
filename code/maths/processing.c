@@ -62,7 +62,7 @@ void copyBuffers(uint32_t* inData, float32_t* outData, uint32_t sizeOfOutData)
 
 /*
  * Function to filter and decimate the input vector
- * Filtering is done through a FIR filter specified according to...NOT IMPLEMENTED
+ * Filtering is done through an IIR filter
  *
  * Decimation is done by a factor provided in the function call.
  * Every decFactor will be saved and the new vector will be shortened
@@ -72,20 +72,17 @@ uint32_t filterAndDecimate(float32_t* data, uint32_t dataSize, uint16_t decFacto
 {
 	// Initialization of local variables
 	float32_t outData[FFT_SIZE * 2];
+	float32_t stateBuffer[2 * N_STAGES];
 
 	// First data should be run through the IIR-filter
-	// Note(klek): This is not yet implemented
-
 	// NOTE(klek): Should this be implemented in separate function to not have it run each time
 	//			   we enter here?
 	// Initialize the filter structure
 	arm_biquad_cascade_df2T_instance_f32 butterworth_f32;
-	// This is temporary buffer for what?
-	float32_t stateBuffer[2 * N_STAGES];
 	arm_biquad_cascade_df2T_init_f32(&butterworth_f32, N_STAGES, (float32_t *)filterCoeff, stateBuffer);
 
 	// Do the filtering
-	// NOTE(klek): Here we must add some output vector. How?
+	// NOTE(klek): The filtered output is in outData
 	arm_biquad_cascade_df2T_f32(&butterworth_f32, data, outData, dataSize);
 
 	// Should move this debugging into main-file

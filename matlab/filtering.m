@@ -35,6 +35,9 @@ t = (0:myLen-1) * timePeriod;
 % Plot super position signal
 figure(3)
 plot(t, t1(1:2:end))
+title('Super position signal');
+xlabel('Time (t)');
+ylabel('Voltage (t)');
 
 % Filter the signal
 output = butterworthFilter(fs, t1);
@@ -42,5 +45,8 @@ output = butterworthFilter(fs, t1);
 % Plot result
 figure(4)
 plot(t, output(1:2:end))
+title('Super position signal filtered');
+xlabel('Time (t)');
+ylabel('Voltage (t)');
 
 end
