@@ -46,7 +46,17 @@ fprintf(fd, '\n};\n');
 fclose(fd);
 
 % Verifying the filter
-%freqz(b,a)
+[h,f] = freqz(b,a,2048,Fs);
+response_dB = 10.*log10(h.*conj(h));
+response_deg =  180/pi*angle(h);
+
+% Plot the filter
+figure(5)
+semilogx(f,response_dB);
+axis([0 1100 -300 10]);
+title('Frequency response for Butterworth order 3');
+xlabel('Frequency (Hz)');
+ylabel('Resoponse (dB)');
 
 % Filter signal
 output = filter(b, a, input);
