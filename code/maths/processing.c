@@ -71,7 +71,7 @@ void copyBuffers(uint32_t* inData, float32_t* outData, uint32_t sizeOfOutData)
 uint32_t filterAndDecimate(float32_t* data, uint32_t dataSize, uint16_t decFactor)
 {
 	// Initialization of local variables
-	float32_t outData[FFT_SIZE * 2];
+	float32_t filterData[FFT_SIZE * 2];
 	float32_t stateBuffer[2 * N_STAGES];
 
 	// First data should be run through the IIR-filter
@@ -83,38 +83,25 @@ uint32_t filterAndDecimate(float32_t* data, uint32_t dataSize, uint16_t decFacto
 
 	// Do the filtering
 	// NOTE(klek): The filtered output is in outData
-	arm_biquad_cascade_df2T_f32(&butterworth_f32, data, outData, dataSize);
+	arm_biquad_cascade_df2T_f32(&butterworth_f32, data, filterData, dataSize);
 
-	// Should move this debugging into main-file
-/*	LOG("Printing the filtered vector: \n");
-	int n = 0;
-	// Delimiter
-    LOG("{ %f; %f", outData[n], outData[n+1]);
-    n += 2;
-	while (n < (FFT_SIZE * 2) )
-	{
-		LOG(";\n%f; %f", outData[n], outData[n+1]);
-		n += 2;
-	}
-	// Delimiter
-	LOG(" };\n");
-*/
 	// Decimation is currently done by the factor which is expected to be an even number
-	// The decimation simply removes every decFactor in the vector and returns same vector
-	// with a new "valid" size
+	// The decimation simply visits every multiple of decFactor in the vector and stores
+	// in the front of the return vector.
 
-	// This will simply overwrite the existing value in a vector with the
-	// value we want to save
+	// This will simply overwrite the existing value in the data vector
+	// with the value we want to save
 	int index = 0;
 	int saveVal = 0;
+	// Incrementing by 2*decFactor because the data is complex
 	for ( ; saveVal < dataSize; saveVal += 2*decFactor)
 	{
 		// Do we need to check boundaries?
 		if ( index < dataSize ) {
 			// Copy I-data
-			data[index++] = outData[saveVal];
+			data[index++] = filterData[saveVal];
 			// Copy Q-data
-			data[index++] = outData[saveVal + 1];
+			data[index++] = filterData[saveVal + 1];
 		}
 	}
 
