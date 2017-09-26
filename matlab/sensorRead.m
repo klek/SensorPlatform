@@ -7,7 +7,7 @@ obj = serial('/dev/ttyACM0');
 outputFile = fopen('../testing/output/out.txt', 'wt');
 
 % Setup settings for the device
-obj.BaudRate = 9600;
+obj.BaudRate = 115200;%9600;
 obj.Parity = 'odd';
 obj.StopBits = 1;
 obj.DataBits = 7;
@@ -23,7 +23,7 @@ fopen(obj);
 
 % Wait 30 sec for the output to be done
 % NOTE(klek): This can be done in a prettier way?
-pause(30)
+pause(5)
 
 % Close the serial connection
 fclose(obj);

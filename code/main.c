@@ -72,7 +72,7 @@
 //#define TEST_ARCTAN
 //#define TEST_FFT
 #define PRINT_PEAKS
-//#define PRINT_SPECTRUM
+#define PRINT_SPECTRUM
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -89,16 +89,12 @@ uint32_t adcBuffer[ADC_BUFFER_SIZE];
 // Defining a global variable for the network interface
 //struct netif gnetif;
 
-// Defining a global buffer for data storage
+// Defining a global status vector
+uint32_t statusVector = 0;
 
-// ADC value
-// Note(klek): These can most likely be moved into main-scope
-//uint32_t ADCAValue = 0;
-//uint32_t ADCBValue = 0;
-
+// Defining variables used for testing/debugging
 uint32_t interrupted = 0;
 uint32_t curIndex = 0;
-uint32_t statusVector = 0;
 static const int testBenchLength = sizeof(testBenchSignal) / sizeof(testBenchSignal[0]);
 
 
@@ -202,15 +198,6 @@ int main(void)
      */
     adcSetup(&AdcAHandle, &AdcBHandle);
 
-
-
-/*    int n = 0;
-    while ( n < 160 ){
-        n++;
-        LOG("The loopvalue is %i\n", n);
-    }
-*/
-
     /*
      * Start both of the ADCs with associated buffers
      */
@@ -219,28 +206,10 @@ int main(void)
     {
         LOG("ERROR: Failed to start DUAL-mode interleaved conversion!\n");
     }
-/*
-    // Start the conversion process for ADC_A
-    if(HAL_ADC_Start_DMA(&AdcAHandle, adcABuffer, ADC_BUFFER_SIZE) != HAL_OK)
-    {
-        LOG("ERROR: Failed to start ADC_A with DMA!\n");
-    }
 
-    // Start the conversion process for ADC_B
-    if(HAL_ADC_Start_DMA(&AdcBHandle, adcBBuffer, ADC_BUFFER_SIZE) != HAL_OK)
-    {
-        LOG("ERROR: Failed to start ADC_B with DMA!\n");
-    }
-*/
     /*
      * NOTE(klek):  More initialization needed?
      */
-    // Init the fft module
-/*  if (fftProcess((float32_t*)adcABuffer) != ARM_MATH_SUCCESS ) {
-        LOG("Error: Couldn't initialize the fft module!\n");
-    }
-*/
-
 
     /*
      * Main program loop
@@ -266,10 +235,6 @@ int main(void)
 
             // Indicate new data is available for processing
             newData = 1;
-
-            // Print the ADCXValues
-//            LOG("The current ADC_A-value is %f\t\t", inData[10] );
-//            LOG("The current ADC_B-value is %f\n", inData[11] );
         }
         // Check status-vector for full buffer
         else if ( statusVector & FULL_BUFFER_INT )
@@ -285,10 +250,6 @@ int main(void)
 
             // Indicate new data is available for processing
             newData = 1;
-
-            // Print the ADCXValues
-//            LOG("The current ADC_A-value is %f\t\t", inData[10] );
-//            LOG("The current ADC_B-value is %f\n", inData[11] );
         }
         else
         {
