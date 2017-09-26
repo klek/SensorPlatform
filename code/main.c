@@ -46,8 +46,9 @@
 
 
 // Includes for testing purposes
-#include "../testing/superPosSignal.h"
-#include "../testing/phaseShiftSignal.h"
+//#include "../testing/superPosSignal.h"
+//#include "../testing/phaseShiftSignal.h"
+#include "../testing/testbench.h"
 
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{
@@ -60,16 +61,18 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 #define ADC_BUFFER_SIZE             (FFT_SIZE * 2)
-#define RING_BUFFER_SIZE			(FFT_SIZE)
-#define DECIMATION_FACTOR           1//16
+#define RING_BUFFER_SIZE            (FFT_SIZE)
+#define DECIMATION_FACTOR           TIME_DEC//1//16
 
 // Defines for the statusVector
 #define HALF_BUFFER_INT             (1 << 0)
 #define FULL_BUFFER_INT             (1 << 1)
 
-#define TEST_BUTTER
+//#define TEST_BUTTER
 //#define TEST_ARCTAN
 //#define TEST_FFT
+#define PRINT_PEAKS
+//#define PRINT_SPECTRUM
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -78,7 +81,7 @@ ADC_HandleTypeDef AdcAHandle;
 ADC_HandleTypeDef AdcBHandle;
 
 // ETH handler declaration
-ETH_HandleTypeDef EthHandle;
+//ETH_HandleTypeDef EthHandle;
 
 // Defining a global buffer for DMA storage
 uint32_t adcBuffer[ADC_BUFFER_SIZE];
@@ -90,11 +93,13 @@ uint32_t adcBuffer[ADC_BUFFER_SIZE];
 
 // ADC value
 // Note(klek): These can most likely be moved into main-scope
-uint32_t ADCAValue = 0;
-uint32_t ADCBValue = 0;
+//uint32_t ADCAValue = 0;
+//uint32_t ADCBValue = 0;
 
 uint32_t interrupted = 0;
+uint32_t curIndex = 0;
 uint32_t statusVector = 0;
+static const int testBenchLength = sizeof(testBenchSignal) / sizeof(testBenchSignal[0]);
 
 
 /* Private function prototypes -----------------------------------------------*/
@@ -121,31 +126,28 @@ static void CPU_CACHE_Enable(void);
   */
 int main(void)
 {
-	/*
-	 * Setup the MPU for ETH descriptors etc
-	 */
-	//MPU_Config();
+    /*
+     * Setup the MPU for ETH descriptors etc
+     */
+    //MPU_Config();
 
     /*
-     * Initilizing variables
+     * Initializing variables
      */
     // Might need 2 of these, one for first part of buffer and one for second
-    // These could be moved to main
     float32_t inData[ADC_BUFFER_SIZE];
     float32_t fftInData[FFT_SIZE * 2];
     float32_t fftResult[FFT_SIZE];
 
     // The rotating buffer for data before FFT calculation
-    // This is one item larger than the other buffers because it will always
-    // contain one empty slot -- WHY DID I THINK THIS?
     struct complexData dataBuffer[RING_BUFFER_SIZE];
     struct circularBuffer workData =
     {
-    	.buffer = dataBuffer,
-		.head = 0,
-		.tail = 0,
-		.filled = 0,
-		.maxLen = (RING_BUFFER_SIZE)
+        .buffer = dataBuffer,
+        .head = 0,
+        .tail = 0,
+        .filled = 0,
+        .maxLen = (RING_BUFFER_SIZE)
     };
 
     /*
@@ -178,7 +180,7 @@ int main(void)
     SystemClock_Config();
 
     // Initialize variables
-    memset(adcBuffer, 0, ADC_BUFFER_SIZE);
+    memset((char *)adcBuffer, 0, (ADC_BUFFER_SIZE*sizeof(uint32_t)));
 
 #ifdef LOGGING
     /*
@@ -254,7 +256,11 @@ int main(void)
 
             // Move data from first half of adcBuffer into processing buffer inData
             // This will also center the data into the middle of the new buffer
-            copyBuffers((uint32_t*)adcBuffer, (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+            //copyBuffers((uint32_t*)adcBuffer, (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+
+            // Copy the test signal from the testbench
+            copyBuffers((testBenchSignal + curIndex), inData, (uint32_t)ADC_BUFFER_SIZE);
+
 
             // Print the ADCXValues
 //            LOG("The current ADC_A-value is %f\t\t", inData[10] );
@@ -267,7 +273,11 @@ int main(void)
             statusVector &= ~FULL_BUFFER_INT;
 
             // Move last half of adcBuffer into processing buffer inData
-            copyBuffers((uint32_t*)(adcBuffer + (ADC_BUFFER_SIZE/2)), (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+            //copyBuffers((uint32_t*)(adcBuffer + (ADC_BUFFER_SIZE/2)), (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+
+            // Copy the test signal from the testbench
+            copyBuffers((testBenchSignal + curIndex), inData, (uint32_t)ADC_BUFFER_SIZE);
+
             // Print the ADCXValues
 //            LOG("The current ADC_A-value is %f\t\t", inData[10] );
 //            LOG("The current ADC_B-value is %f\n", inData[11] );
@@ -296,19 +306,19 @@ int main(void)
         validItems = filterAndDecimate(inData, ADC_BUFFER_SIZE, DECIMATION_FACTOR);
 
 #ifdef TEST_BUTTER
-    	// Should move this debugging into main-file
-    	LOG("Printing the filtered vector: \n");
-    	int n = 0;
-    	// Delimiter
+        // Should move this debugging into main-file
+        LOG("Printing the filtered vector: \n");
+        int n = 0;
+        // Delimiter
         LOG("{ %f; %f", inData[n], inData[n+1]);
         n += 2;
-    	while (n < (FFT_SIZE * 2) )
-    	{
-    		LOG(";\n%f; %f", inData[n], inData[n+1]);
-    		n += 2;
-    	}
-    	// Delimiter
-    	LOG(" };\n");
+        while (n < (FFT_SIZE * 2) )
+        {
+            LOG(";\n%f; %f", inData[n], inData[n+1]);
+            n += 2;
+        }
+        // Delimiter
+        LOG(" };\n");
 #endif
 
         if ( validItems == 0 )
@@ -343,71 +353,67 @@ int main(void)
         if ( workData.filled == 1 )
         {
             circMultiRead(&workData, (struct complexData *)fftInData, FFT_SIZE);
-        }
+//        }
         
 #if (defined(TEST_ARCTAN) || defined(TEST_BUTTER))
-        // Copy phase-calculated data into fftInData
-        memcpy(fftInData, inData, ((FFT_SIZE * 2) * sizeof(float32_t)) );
+            // Copy phase-calculated data into fftInData
+            memcpy(fftInData, inData, ((FFT_SIZE * 2) * sizeof(float32_t)) );
 #endif
 
-        // Print the ADCXValues
-        //LOG("The current ADC_A-value is %lu\t\t", inData[10] );
-        //LOG("The current ADC_B-value is %lu\n", inData[11] );
+            // Print the ADCXValues
+            //LOG("The current ADC_A-value is %lu\t\t", inData[10] );
+            //LOG("The current ADC_B-value is %lu\n", inData[11] );
 
 #ifdef TEST_FFT
-        // Testing the FFT with signal vector from matlab.
-        // This needs to be applied to the fftInData
-        memcpy(fftInData, superPosSignal, ((FFT_SIZE * 2) * sizeof(float32_t)) );
+            // Testing the FFT with signal vector from matlab.
+            // This needs to be applied to the fftInData
+            memcpy(fftInData, superPosSignal, ((FFT_SIZE * 2) * sizeof(float32_t)) );
 
 //        LOG("%f \n %f \n %f\n", fftInData[0], fftInData[1], fftInData[2]);
 #endif
 
-        // Calculate mean for the input data
-        float32_t meanVal = 0.0f;
-        arm_mean_f32(fftInData, FFT_SIZE*2, &meanVal);
+            // Calculate mean for the input data
+            float32_t meanVal = 0.0f;
+            arm_mean_f32(fftInData, FFT_SIZE*2, &meanVal);
 
-        /*
-         * NOTE(klek):  When we process data through FFT the previous buffer will be overwritten
-         *              unless we do this some other way.
-         *              Also can we implement some sort of ringbuffer to not have to copy data
-         *              more than once?
-         *
-         * NOTE(klek): THIS SHOULD BE FIXED NOW!!
-         */
-        // Process data through FFT
-        //
-        float32_t maxVal[NR_OF_PEAKS];
-        uint32_t resIndex[NR_OF_PEAKS];
-        fftProcess(fftInData, fftResult, maxVal, resIndex);
+            /*
+             * NOTE(klek):  When we process data through FFT the previous buffer will be overwritten
+             *              unless we do this some other way.
+             *              Also can we implement some sort of ringbuffer to not have to copy data
+             *              more than once?
+             *
+             * NOTE(klek): THIS SHOULD BE FIXED NOW!!
+             */
+            // Process data through FFT
+            //
+            float32_t maxVal[NR_OF_PEAKS];
+            uint32_t resIndex[NR_OF_PEAKS];
+            fftProcess(fftInData, fftResult, maxVal, resIndex);
 
-        /*
-         * Debugging
-         * Print the result to debugging terminal for capture in MATLAB
-         */
-        // Start by delimiting content in output
-//        LOG("#\n");
-        int s = 0;
-        for (s = 0; s < NR_OF_PEAKS; s++)
-        {
-        	LOG("Max value of %f at bin %lu\n", maxVal[s], resIndex[s]);
+            /*
+             * Debugging
+             * Print the result to debugging terminal for capture in MATLAB
+             */
+#ifdef PRINT_PEAKS
+            int s = 0;
+            for (s = 0; s < NR_OF_PEAKS; s++)
+            {
+                LOG("Max value of %f at bin %lu (%.2f Hz) \n", maxVal[s], resIndex[s], (float32_t)(1.0f/DECIMATION_FACTOR)*resIndex[s]);
+            }
+#endif
+
+#ifdef PRINT_SPECTRUM
+            s = 0;
+            LOG("[ %f; %f", fftResult[s], fftResult[s+1]);
+            s += 2;
+            while ( s < FFT_SIZE / 2 )
+            {
+                LOG(";\n%f; %f", fftResult[s], fftResult[s+1]);
+                s += 2;
+            }
+            LOG(" ]; \n");
+#endif
         }
-
-        // Second delimitation
-//        LOG("#\n");
-        s = 0;
-        LOG("[ %f; %f", fftResult[s], fftResult[s+1]);
-//        LOG("[ %f; %f", fftInData[s], fftInData[s+1]);
-        s += 2;
-        while ( s < FFT_SIZE / 2 )
-//		while ( s < (FFT_SIZE * 2) )
-        {
-        	LOG(";\n%f; %f", fftResult[s], fftResult[s+1]);
-//        	LOG(";\n%f; %f", fftInData[s], fftInData[s+1]);
-        	s += 2;
-        }
-        LOG(" ]; \n");
-
-
         /*
          * NOTE(klek):  The processing flow should be as follows after
          *              interrupts have occurred.
@@ -537,20 +543,18 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
      * We need to find out which ADC gave the interrupt
      */
     if ( AdcHandle->Instance == ADC_A ) {
-        // Copy data
-        //ADCAValue = accumulate(adcABuffer, adcABuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
-        ADCAValue = adcBuffer[4];
-        ADCBValue = adcBuffer[5];
-
         // Set status bit
         statusVector |= FULL_BUFFER_INT;
+
+        // Testing the algorithm
+        curIndex += ADC_BUFFER_SIZE / 2;
+        if ( curIndex >= testBenchLength ) {
+            curIndex = 0;
+        }
 
         interrupted++;
     }
     else if ( AdcHandle->Instance == ADC_B ) {
-        // Copy data
-        //ADCBValue = accumulate(adcBBuffer, adcBBuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
-//      ADCBValue = adcBBuffer[4];
         LOG("BUG: Why did this happen??\n");
     }
     else {
@@ -575,19 +579,18 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* AdcHandle)
      * We need to find out which ADC gave the interrupt
      */
     if ( AdcHandle->Instance == ADC_A ) {
-        // Copy data
-        //ADCAValue = accumulate(adcABuffer, adcABuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
-        ADCAValue = adcBuffer[4];
-
         // Set status bit
         statusVector |= HALF_BUFFER_INT;
 
-        //interrupted++;
+        // Testing the algorithm
+        curIndex += ADC_BUFFER_SIZE / 2;
+        if ( curIndex >= testBenchLength ) {
+            curIndex = 0;
+        }
+
+        interrupted++;
     }
     else if ( AdcHandle->Instance == ADC_B ) {
-        // Copy data
-        //ADCBValue = accumulate(adcBBuffer, adcBBuffer + ADC_BUFFER_SIZE, 0) / ADC_BUFFER_SIZE;
-//      ADCBValue = adcBBuffer[4];
         LOG("BUG: Why did this happen??\n");
     }
     else {

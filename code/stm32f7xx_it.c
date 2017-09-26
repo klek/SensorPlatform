@@ -56,7 +56,7 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 extern ADC_HandleTypeDef AdcHandle;
-extern ETH_HandleTypeDef EthHandle;
+//extern ETH_HandleTypeDef EthHandle;
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
@@ -186,7 +186,7 @@ void ADCx_DMA_IRQHandler(void)
   */
 void ETH_IRQHandler(void)
 {
-  HAL_ETH_IRQHandler(&EthHandle);
+//  HAL_ETH_IRQHandler(&EthHandle);
 }
 
 /**
