@@ -19,7 +19,7 @@ t = (0:myLen-1) * timePeriod;
 
 % Generating a superposition signal of the four frequencies
 a = 2 * pi * t;
-superPosSignal_orig = 0.5*sin(a*LOW_FREQ) + 0.5*sin(a*MEDIUM_FREQ_1) + 0.5*sin(a*MEDIUM_FREQ_2) + 0.5*sin(a*HIGH_FREQ);
+superPosSignal_orig = (0.5*sin(a*LOW_FREQ) + 0.5*sin(a*MEDIUM_FREQ_1) + 0.5*sin(a*MEDIUM_FREQ_2) + 0.5*sin(a*HIGH_FREQ));
 
 % Plotting the inputsignal
 %figure(1)
