@@ -30,6 +30,7 @@
 #define USARTx_RX_GPIO_PORT             GPIOD
 #define USARTx_RX_AF                    GPIO_AF7_USART3
 
+#define UART_BAUD_RATE					115200//9600
 // Macro the printf-function
 
 void uartSetup(void);

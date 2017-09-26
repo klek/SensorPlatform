@@ -134,6 +134,9 @@ int main(void)
     /*
      * Initializing variables
      */
+    // Flag to indicate new data for processing
+    uint8_t newData = 0;
+
     // Might need 2 of these, one for first part of buffer and one for second
     float32_t inData[ADC_BUFFER_SIZE];
     float32_t fftInData[FFT_SIZE * 2];
@@ -261,6 +264,8 @@ int main(void)
             // Copy the test signal from the testbench
             copyBuffers((testBenchSignal + curIndex), inData, (uint32_t)ADC_BUFFER_SIZE);
 
+            // Indicate new data is available for processing
+            newData = 1;
 
             // Print the ADCXValues
 //            LOG("The current ADC_A-value is %f\t\t", inData[10] );
@@ -278,6 +283,9 @@ int main(void)
             // Copy the test signal from the testbench
             copyBuffers((testBenchSignal + curIndex), inData, (uint32_t)ADC_BUFFER_SIZE);
 
+            // Indicate new data is available for processing
+            newData = 1;
+
             // Print the ADCXValues
 //            LOG("The current ADC_A-value is %f\t\t", inData[10] );
 //            LOG("The current ADC_B-value is %f\n", inData[11] );
@@ -285,147 +293,115 @@ int main(void)
         else
         {
             // Here we process data
-        }
-
-
+            if ( newData == 1 ) {
+                newData = 0;
 #ifdef TEST_BUTTER
-        memcpy(inData, superPosSignal, ((FFT_SIZE * 2) * sizeof(float32_t)) );
+                memcpy(inData, superPosSignal, ((FFT_SIZE * 2) * sizeof(float32_t)) );
 #endif
 
-        // inData contains the new sampled data
-        // This data needs to be filtered and decimated since we are looking for very low frequencies.
-        // For the FFT to be accurate we need a resolution of 0.5 Hz
-        // A rough estimate of the FFT resolution is possible to get from samples/sec divided by points
-        // This is true for the low-pass filtering with FIR as well
-
-        // Currently we have will decimate by half => removing half of the samples
-        // This should generate more than enough samples left to do FFT, but reduce the samples/sec drastically
-        // Essentially we should do a ring buffer with same size as the number of points in the FFT
-        // And then we could continuously execute FFT on this vector
-        uint32_t validItems = 0;
-        validItems = filterAndDecimate(inData, ADC_BUFFER_SIZE, DECIMATION_FACTOR);
+                // inData contains the new sampled data
+                // This data needs to be filtered and decimated since we are looking for very low frequencies.
+                uint32_t validItems = 0;
+                validItems = filterAndDecimate(inData, ADC_BUFFER_SIZE, DECIMATION_FACTOR);
 
 #ifdef TEST_BUTTER
-        // Should move this debugging into main-file
-        LOG("Printing the filtered vector: \n");
-        int n = 0;
-        // Delimiter
-        LOG("{ %f; %f", inData[n], inData[n+1]);
-        n += 2;
-        while (n < (FFT_SIZE * 2) )
-        {
-            LOG(";\n%f; %f", inData[n], inData[n+1]);
-            n += 2;
-        }
-        // Delimiter
-        LOG(" };\n");
+                // Should move this debugging into main-file
+                LOG("Printing the filtered vector: \n");
+                int n = 0;
+                // Delimiter
+                LOG("{ %f; %f", inData[n], inData[n+1]);
+                n += 2;
+                while (n < (FFT_SIZE * 2) )
+                {
+                    LOG(";\n%f; %f", inData[n], inData[n+1]);
+                    n += 2;
+                }
+                // Delimiter
+                LOG(" };\n");
 #endif
 
-        if ( validItems == 0 )
-        {
-            LOG("ERROR: Filtering and decimation results in zero new items\n");
-        }
+                if ( validItems == 0 )
+                {
+                    LOG("ERROR: Filtering and decimation results in zero new items\n");
+                }
 
-        // inData can now be copied to the fftInData...
-        LOG("New buffer contains %lu valid items\n", validItems);
+                // Debugging
+                LOG("New buffer contains %lu valid items\n", validItems);
 
 #ifdef TEST_ARCTAN
-        // Testing the arctan implementation with a signal
-        // vector from matlab
-        memcpy(inData, phaseShiftSignal, ((FFT_SIZE * 2) * sizeof(float32_t)) );
+                // Testing the arctan implementation with a signal
+                // vector from matlab
+                memcpy(inData, phaseShiftSignal, ((FFT_SIZE * 2) * sizeof(float32_t)) );
 #endif
 
-        /*
-         * TODO(klek): Arctangent calculation of the valid items in the buffer
-         */
-//        phaseCalc((float32_t*)inData, validItems);
+                // Calculating the phase for the incoming data
+                phaseCalc((float32_t*)inData, validItems);
 
-        /*
-         * TODO(klek): Update the rotating buffer with the newly calculated values
-         */
-        circMultiPush(&workData, (struct complexData *)inData, validItems/2);
 
-        /*
-         * TODO(klek): When the ringBuffer has been filled, we should copy data to
-         *             fftInData buffer for FFT-processing.
-         *             This needs some form of checking
-         */
-        if ( workData.filled == 1 )
-        {
-            circMultiRead(&workData, (struct complexData *)fftInData, FFT_SIZE);
-//        }
+                // Updating the ring buffer with new values
+                circMultiPush(&workData, (struct complexData *)inData, validItems/2);
+
+                // When the ring buffer has been filled, data is copied into the
+                // FFT-algorithm for processing
+                if ( workData.filled == 1 )
+                {
+                    circMultiRead(&workData, (struct complexData *)fftInData, FFT_SIZE);
         
 #if (defined(TEST_ARCTAN) || defined(TEST_BUTTER))
-            // Copy phase-calculated data into fftInData
-            memcpy(fftInData, inData, ((FFT_SIZE * 2) * sizeof(float32_t)) );
+                    // Copy phase-calculated data into fftInData
+                    memcpy(fftInData, inData, ((FFT_SIZE * 2) * sizeof(float32_t)) );
 #endif
-
-            // Print the ADCXValues
-            //LOG("The current ADC_A-value is %lu\t\t", inData[10] );
-            //LOG("The current ADC_B-value is %lu\n", inData[11] );
 
 #ifdef TEST_FFT
-            // Testing the FFT with signal vector from matlab.
-            // This needs to be applied to the fftInData
-            memcpy(fftInData, superPosSignal, ((FFT_SIZE * 2) * sizeof(float32_t)) );
+                    // Testing the FFT with signal vector from matlab.
+                    // This needs to be applied to the fftInData
+                    memcpy(fftInData, superPosSignal, ((FFT_SIZE * 2) * sizeof(float32_t)) );
 
-//        LOG("%f \n %f \n %f\n", fftInData[0], fftInData[1], fftInData[2]);
+//                    LOG("%f \n %f \n %f\n", fftInData[0], fftInData[1], fftInData[2]);
 #endif
 
-            // Calculate mean for the input data
-            float32_t meanVal = 0.0f;
-            arm_mean_f32(fftInData, FFT_SIZE*2, &meanVal);
+                    // Calculate mean for the input data
+                    float32_t meanVal = 0.0f;
+                    arm_mean_f32(fftInData, FFT_SIZE*2, &meanVal);
 
-            /*
-             * NOTE(klek):  When we process data through FFT the previous buffer will be overwritten
-             *              unless we do this some other way.
-             *              Also can we implement some sort of ringbuffer to not have to copy data
-             *              more than once?
-             *
-             * NOTE(klek): THIS SHOULD BE FIXED NOW!!
-             */
-            // Process data through FFT
-            //
-            float32_t maxVal[NR_OF_PEAKS];
-            uint32_t resIndex[NR_OF_PEAKS];
-            fftProcess(fftInData, fftResult, maxVal, resIndex);
+                    // Process data through FFT
+                    float32_t maxVal[NR_OF_PEAKS];
+                    uint32_t resIndex[NR_OF_PEAKS];
+                    fftProcess(fftInData, fftResult, maxVal, resIndex);
 
-            /*
-             * Debugging
-             * Print the result to debugging terminal for capture in MATLAB
-             */
 #ifdef PRINT_PEAKS
-            int s = 0;
-            for (s = 0; s < NR_OF_PEAKS; s++)
-            {
-                LOG("Max value of %f at bin %lu (%.2f Hz) \n", maxVal[s], resIndex[s], (float32_t)(1.0f/DECIMATION_FACTOR)*resIndex[s]);
-            }
+                    /*
+                     * Debugging
+                     * Print the result to debugging terminal for capture in MATLAB
+                     */
+                    int s = 0;
+                    for (s = 0; s < NR_OF_PEAKS; s++)
+                    {
+                        LOG("Max value of %f at bin %lu (%.2f Hz) \n", maxVal[s], resIndex[s], (float32_t)(1.0f/DECIMATION_FACTOR)*resIndex[s]);
+                    }
 #endif
 
 #ifdef PRINT_SPECTRUM
-            s = 0;
-            LOG("[ %f; %f", fftResult[s], fftResult[s+1]);
-            s += 2;
-            while ( s < FFT_SIZE / 2 )
-            {
-                LOG(";\n%f; %f", fftResult[s], fftResult[s+1]);
-                s += 2;
-            }
-            LOG(" ]; \n");
+                    /*
+                     * Debugging
+                     * Print the result to debugging terminal for capture in MATLAB
+                     */
+                    s = 0;
+                    LOG("[ %f; %f", fftResult[s], fftResult[s+1]);
+                    s += 2;
+                    while ( s < FFT_SIZE / 2 )
+                    {
+                        LOG(";\n%f; %f", fftResult[s], fftResult[s+1]);
+                        s += 2;
+                    }
+                    LOG(" ]; \n");
 #endif
+                }
+                // Debug output to verify interrupts
+                LOG("%lu interrupts since last time\n", interrupted);
+                interrupted = 0;
+            }
         }
-        /*
-         * NOTE(klek):  The processing flow should be as follows after
-         *              interrupts have occurred.
-         *
-         *              Data should be moved from DMA-buffers
-         *              Data should be pre-processed before being saved elsewhere
-         *              Pre-processing includes filtering and decimation of the data
-         *              After filtering and decimation of the data, we can start processing it
-         *              by doing arctangent calculation and also follow that up with FFT
-         */
-//        LOG("We reached interrupt routine %lu times since last\n", interrupted);
-        interrupted = 0;
     }
 }
 
