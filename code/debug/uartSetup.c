@@ -30,33 +30,33 @@ static UART_HandleTypeDef UartHandle;
  */
 void uartSetup(void)
 {
-	  /*##-1- Configure the UART peripheral ######################################*/
-	  /* Put the USART peripheral in the Asynchronous mode (UART Mode) */
-	  /* UART configured as follows:
-	      - Word Length = 8 Bits (7 data bit + 1 parity bit) :
-		                  BE CAREFUL : Program 7 data bits + 1 parity bit in PC HyperTerminal
-	      - Stop Bit    = One Stop bit
-	      - Parity      = ODD parity
-	      - BaudRate    = 9600 baud
-	      - Hardware flow control disabled (RTS and CTS signals) */
-	  UartHandle.Instance        = USARTx;
+      /*##-1- Configure the UART peripheral ######################################*/
+      /* Put the USART peripheral in the Asynchronous mode (UART Mode) */
+      /* UART configured as follows:
+          - Word Length = 8 Bits (7 data bit + 1 parity bit) :
+                          BE CAREFUL : Program 7 data bits + 1 parity bit in PC HyperTerminal
+          - Stop Bit    = One Stop bit
+          - Parity      = ODD parity
+          - BaudRate    = 9600 baud
+          - Hardware flow control disabled (RTS and CTS signals) */
+      UartHandle.Instance        = USARTx;
 
-	  UartHandle.Init.BaudRate   = UART_BAUD_RATE;
-	  UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
-	  UartHandle.Init.StopBits   = UART_STOPBITS_1;
-	  UartHandle.Init.Parity     = UART_PARITY_ODD;
-	  UartHandle.Init.HwFlowCtl  = UART_HWCONTROL_NONE;
-	  UartHandle.Init.Mode       = UART_MODE_TX_RX;
-	  UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
-	  if (HAL_UART_Init(&UartHandle) != HAL_OK)
-	  {
-	    /* Initialization Error */
-	    //Error_Handler();
-	  }
+      UartHandle.Init.BaudRate   = UART_BAUD_RATE;
+      UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
+      UartHandle.Init.StopBits   = UART_STOPBITS_1;
+      UartHandle.Init.Parity     = UART_PARITY_ODD;
+      UartHandle.Init.HwFlowCtl  = UART_HWCONTROL_NONE;
+      UartHandle.Init.Mode       = UART_MODE_TX_RX;
+      UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
+      if (HAL_UART_Init(&UartHandle) != HAL_OK)
+      {
+        /* Initialization Error */
+        //Error_Handler();
+      }
 
-	  /* Output a message on Hyperterminal using printf function */
-	  printf("\n UART Printf Example: retarget the C library printf function to the UART\n");
-	  printf("** Test finished successfully. ** \n");
+      /* Output a message on Hyperterminal using printf function */
+      printf("\n UART Printf Example: retarget the C library printf function to the UART\n");
+      printf("** Test finished successfully. ** \n");
 
 }
 
@@ -124,6 +124,64 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
   /* Configure UART Rx as alternate function  */
   HAL_GPIO_DeInit(USARTx_RX_GPIO_PORT, USARTx_RX_PIN);
 
+}
+
+/*
+ *
+ */
+void uartSend(char type, uint8_t* data, uint16_t dataSize)
+{
+    // Initialize the varibles used
+    uint8_t unused = 0;
+    
+    // Calculate how many packets will be sent
+    uint16_t nrOfPackets = dataSize / PACKET_SIZE;
+
+    // Setup the packet
+
+    uint16_t i = 0;
+    for ( ; i < nrOfPackets ; i++)
+    {
+        // Send header
+        HAL_UART_Transmit(&UartHandle, (uint8_t*)&type, 1, 0xFFFF);
+        HAL_UART_Transmit(&UartHandle, (uint8_t*)&unused, 1, 0xFFFF);
+        HAL_UART_Transmit(&UartHandle, (uint8_t*)&i, 2, 0xFFFF);
+        HAL_UART_Transmit(&UartHandle, (uint8_t*)&dataSize, 2, 0xFFFF);
+
+        uint16_t restData = dataSize - (i * PACKET_SIZE);
+        if ( restData > PACKET_SIZE )
+        {
+        	// Send the data
+        	HAL_UART_Transmit(&UartHandle, (uint8_t*)(data + i), PACKET_SIZE, 0xFFFF);
+        }
+        else
+        {
+        	HAL_UART_Transmit(&UartHandle, (uint8_t*)(data + i), restData, 0xFFFF);
+        }
+    }
+    // Determine which type of data we have
+/*    switch(type)
+    {
+        case 'A':
+            // Debugging message, should use printf for now
+            break;
+
+        case 'B':
+            // This is a data message
+            // Send header
+            HAL_UART_Transmit(&UartHandle, (uint8_t*)&type, 1, 0xFFFF);
+            HAL_UART_Transmit(&UartHandle, (uint8_t*)&unused, 1, 0xFFFF);
+            HAL_UART_Transmit(&UartHandle, (uint8_t*)&dataSize, 2, 0xFFFF);
+            // Send the data
+            HAL_UART_Transmit(&UartHandle, data, dataSize, 0xFFFF);
+            // End transmission with ??
+            break;
+
+        default:
+            // None of above are true, then we have a problem
+            break;
+    }
+*/
 }
 
 /**

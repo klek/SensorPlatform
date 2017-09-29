@@ -23,7 +23,7 @@ fopen(obj);
 
 % Wait 30 sec for the output to be done
 % NOTE(klek): This can be done in a prettier way?
-pause(5)
+pause(10)
 
 % Close the serial connection
 fclose(obj);

@@ -347,15 +347,16 @@ int main(void)
                      * Debugging
                      * Print the result to debugging terminal for capture in MATLAB
                      */
-                    s = 0;
-                    LOG("[ %f; %f", fftResult[s], fftResult[s+1]);
-                    s += 2;
-                    while ( s < FFT_SIZE / 2 )
-                    {
-                        LOG(";\n%f; %f", fftResult[s], fftResult[s+1]);
-                        s += 2;
-                    }
-                    LOG(" ]; \n");
+//                    s = 0;
+//                    LOG("[ %f; %f", fftResult[s], fftResult[s+1]);
+//                    s += 2;
+//                    while ( s < FFT_SIZE / 2 )
+//                    {
+//                        LOG(";\n%f; %f", fftResult[s], fftResult[s+1]);
+//                        s += 2;
+//                    }
+//                    LOG(" ]; \n");
+                    uartSend((char)'B',(uint8_t*)fftResult, ((FFT_SIZE/2)*sizeof(fftResult[0])));
 #endif
                 }
                 // Debug output to verify interrupts
@@ -500,7 +501,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
         BSP_LED_On(LED3);
     }
     /* Turn LED1 on: Transfer process is correct */
-    BSP_LED_On(LED1);
+    BSP_LED_Off(LED1);
 }
 
 /**

@@ -30,11 +30,16 @@
 #define USARTx_RX_GPIO_PORT             GPIOD
 #define USARTx_RX_AF                    GPIO_AF7_USART3
 
-#define UART_BAUD_RATE					115200//9600
+#define UART_BAUD_RATE                  115200//9600
 // Macro the printf-function
+
+// Macros for packet info
+#define PACKET_SIZE						256
+
 
 void uartSetup(void);
 void HAL_UART_MspInit(UART_HandleTypeDef *huart);
 void HAL_UART_MspDeInit(UART_HandleTypeDef *huart);
+void uartSend(char type, uint8_t* data, uint16_t dataSize);
 
 #endif
