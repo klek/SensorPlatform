@@ -47,7 +47,7 @@
 
 
 // Includes for testing purposes
-//#include "../testing/superPosSignal.h"
+#include "../testing/superPosSignal.h"
 //#include "../testing/phaseShiftSignal.h"
 #include "../testing/testbench.h"
 
@@ -71,7 +71,7 @@
 
 //#define TEST_BUTTER
 //#define TEST_ARCTAN
-//#define TEST_FFT
+#define TEST_FFT
 #define PRINT_PEAKS
 #define PRINT_SPECTRUM
 

@@ -9,6 +9,9 @@
 #include "bytepacking.h"
 #include "arm_math.h"
 
+// Initialization of the theEndian
+static int theEndian = ENDIAN_UNKNOWN;
+
 static int endianness(void)
 {
   union
@@ -58,8 +61,6 @@ void floatArray2ByteArray(float32_t* data, uint32_t size)
         memcpy((uint8_t*)(data + i), byteArray, 4);
     }
 
-    // Test endianness
-    int tmp = endianness();
 }
 
 /*
@@ -74,11 +75,57 @@ void floatArray2ByteArray(float32_t* data, uint32_t size)
  */
 void packFloat(uint8_t* byteArray, float32_t f)
 {
-    int i;
-    uint32_t asInt = *((int32_t*)&f);
-    for ( i = 0; i < 4; i++) {
-        byteArray[3 - i] = (asInt >> 8 * i) & 0xFF;
+    //int i;
+    //uint32_t asInt = *((int32_t*)&f);
+    uint8_t* p = (uint8_t*)&f;
+
+    // Is endian set?
+    if ( theEndian == ENDIAN_UNKNOWN) {
+        // We need to determine endian
+        theEndian = endianness();
     }
+
+    // Unroll the cases
+    switch(theEndian)
+    {
+        case ENDIAN_BIG:
+            // This is essentially what we want
+            byteArray[0] = p[0];//(asInt >> 24) & 0xFF;
+            byteArray[1] = p[1];//(asInt >> 16) & 0xFF;
+            byteArray[2] = p[2];//(asInt >> 8) & 0xFF;
+            byteArray[3] = p[3];//asInt & 0xFF;
+            break;
+
+        case ENDIAN_LITTLE:
+            // This is the opposite to what we want
+            byteArray[0] = p[3];//asInt & 0xFF;
+            byteArray[1] = p[2];//(asInt >> 8) & 0xFF;
+            byteArray[2] = p[1];//(asInt >> 16) & 0xFF;
+            byteArray[3] = p[0];//(asInt >> 24) & 0xFF;
+            break;
+
+        case ENDIAN_BIG_WORD:
+            // Does this exist for my code?
+            byteArray[0] = p[2];//(asInt >> 24) & 0xFF;
+            byteArray[1] = p[3];//(asInt >> 16) & 0xFF;
+            byteArray[2] = p[0];//(asInt >> 8) & 0xFF;
+            byteArray[3] = p[1];//asInt & 0xFF;
+            break;
+
+        case ENDIAN_LITTLE_WORD:
+            // Does this exist for my code?
+            byteArray[0] = p[1];//(asInt >> 24) & 0xFF;
+            byteArray[1] = p[0];//(asInt >> 16) & 0xFF;
+            byteArray[2] = p[3];//(asInt >> 8) & 0xFF;
+            byteArray[3] = p[2];//asInt & 0xFF;
+            break;
+
+        default:
+            break;
+    }
+//    for ( i = 0; i < 4; i++) {
+//        byteArray[3 - i] = (asInt >> 8 * i) & 0xFF;
+//    }
 }
 
 

@@ -34,6 +34,7 @@ handles.message.head.size = uint16(0);
 handles.message.payload = 0;
 handles.message.waiting = 0;
 handles.message.prevIndex = 0;
+handles.message.newData = 0;
 
 % The fft struct
 handles.fft.fftLength = 2048;
@@ -129,9 +130,10 @@ function updatePlot(src, event, hFigure)
     handles = guidata(hFigure);
     
     % Check if there is new data
-    if ( handles.message.waiting == 0 )
-        % Do nothing xD
-        fprintf('The data received %f\n', handles.message.prevIndex);
+    if ( handles.message.newData == 1 )
+        % Reset the newData
+        handles.message.newData = 0;
+        %fprintf('The data received %f\n', handles.message.prevIndex);
         
         % Create the frequency vector
         sigLen = length(handles.message.payload);
@@ -140,11 +142,17 @@ function updatePlot(src, event, hFigure)
         
         % Plot the new data
         %plotSpectrum(handles.message.payload, handles.plot.fftLength, (handles.plot.sampleRate/handles.plot.decimation));
-        plot(handles.axis, f, handles.message.payload)
+        hPlot = plot(handles.axis, f, handles.message.payload);
         title('Frequency spectrum of vital signs');
         xlabel('Frequency [Hz]');
         ylabel('Magnitude [V]');
+        
+        % Mark the peaks with data tips
+        makedatatip(hPlot, [41 51])
     end
+    
+    % Make sure we update the structure
+    guidata(handles.figure, handles);
 end
 
 function serialButton_Callback(src,event,handles)
@@ -235,10 +243,21 @@ function serialConnectEventHandler(src, event, hFigure)
                     prevIndex = handles.message.prevIndex;
                     for i = 1:(grabData/4);
                         slot = (i - 1) * 4;
-                        handles.message.payload(i+prevIndex) = double( out(7+slot)*2^24 + out(8+slot)*2^16 + out(9+slot)*2^8 + out(10+slot) );
+                        tmp1 = uint32(bitshift(out(7+slot),24));
+                        tmp2 = uint32(bitshift(out(8+slot),16));
+                        tmp3 = uint32(bitshift(out(9+slot),8));
+                        tmp4 = uint32(out(10+slot));
+                        handles.message.payload(i+prevIndex) = typecast( (tmp1 + tmp2 + tmp3 + tmp4), 'single');
+                        %handles.message.payload(i+prevIndex) = double( out(7+slot)*2^24 + out(8+slot)*2^16 + out(9+slot)*2^8 + out(10+slot) );
                     end
                     handles.message.prevIndex = prevIndex + i;
                     % Do we need to do something more?
+                    
+                    % Was this the last data?
+                    if ( handles.message.waiting == 0 )
+                        % Indicate an update is needed
+                        handles.message.newData = 1;
+                    end
                 else
                     % Well apparently we missed a packet??
                     fprintf('Missed a packet??\n');
@@ -273,7 +292,14 @@ function serialConnectEventHandler(src, event, hFigure)
                 % Starting at slot 7
                 for i = 1:(256/4);
                     slot = (i - 1) * 4;
-                    handles.message.payload(i) = double( out(7+slot)*2^24 + out(8+slot)*2^16 + out(9+slot)*2^8 + out(10+slot) );
+                    % Creating a byte array
+                    %A = uint8([ out(7+slot) out(8+slot) out(9+slot) out(10+slot) ]);
+                    tmp1 = uint32(bitshift(out(7+slot),24));
+                    tmp2 = uint32(bitshift(out(8+slot),16));
+                    tmp3 = uint32(bitshift(out(9+slot),8));
+                    tmp4 = uint32(out(10+slot));
+                    handles.message.payload(i) = typecast( (tmp1 + tmp2 + tmp3 + tmp4), 'single');
+                    %handles.message.payload(i) = double( out(7+slot)*2^24 + out(8+slot)*2^16 + out(9+slot)*2^8 + out(10+slot) );
                 end
                 handles.message.prevIndex = i;
             else
@@ -281,7 +307,12 @@ function serialConnectEventHandler(src, event, hFigure)
                 % Starting at slot 7
                 for i = 1:(handles.message.head.size/4);
                     slot = (i - 1) * 4;
-                    handles.message.payload(i) = double( out(7+slot)*2^24 + out(8+slot)*2^16 + out(9+slot)*2^8 + out(10+slot) );
+                    tmp1 = uint32(bitshift(out(7+slot),24));
+                    tmp2 = uint32(bitshift(out(8+slot),16));
+                    tmp3 = uint32(bitshift(out(9+slot),8));
+                    tmp4 = uint32(out(10+slot));
+                    handles.message.payload(i) = typecast( (tmp1 + tmp2 + tmp3 + tmp4), 'single');
+                    %handles.message.payload(i) = double( out(7+slot)*2^24 + out(8+slot)*2^16 + out(9+slot)*2^8 + out(10+slot) );
                 end
             end
             
