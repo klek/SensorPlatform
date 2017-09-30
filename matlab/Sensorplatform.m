@@ -15,6 +15,17 @@ data = 0;
 % Flag to indicate if data is available
 dataAvailable = 0;
 
+% Construct the UI
+% Create the figure window
+hFigure = figure(10);
+hFigure.Visible = 'off';
+hFigure.Name = 'Sensorplatform';
+hFigure.Position = [360,500,750,585];
+%figure('Name', 'Sensorplatform', 'Visible', 'off', 'Position', [360,500,750,585]);
+
+% Get the handles
+handles = guihandles(hFigure);
+
 % The message struct
 handles.message.head.type = char();
 handles.message.head.nr = uint16(0);
@@ -22,6 +33,12 @@ handles.message.head.size = uint16(0);
 %handles.message.head.size2 = 0;
 handles.message.payload = 0;
 handles.message.waiting = 0;
+handles.message.prevIndex = 0;
+
+% The fft struct
+handles.fft.fftLength = 2048;
+handles.fft.decimation = 1;
+handles.fft.sampleRate = 2048;
 
 % Assign the output file to handles
 handles.outFile = outputFile;
@@ -38,23 +55,15 @@ hSerial.InputBufferSize = 2048;     % This should be larger than needed
 % Configure the callback
 hSerial.BytesAvailableFcnMode = 'byte';%'terminator';
 hSerial.BytesAvailableFcnCount = (256+6);
-hSerial.BytesAvailableFcn = {@serialConnectEventHandler, handles};
+hSerial.BytesAvailableFcn = {@serialConnectEventHandler, hFigure};
 
 % Attach it to handles
 handles.serial = hSerial;
 
-% Construct the UI
-% Create the figure window
-handles.figure = figure(10);
-handles.figure.Visible = 'off';
-handles.figure.Name = 'Sensorplatform';
-handles.figure.Position = [360,500,750,585];
-%figure('Name', 'Sensorplatform', 'Visible', 'off', 'Position', [360,500,750,585]);
-
 % Initialize the timer
 handles.timer = timer('ExecutionMode', 'fixedRate',...
                 'Period', 0.5,...
-                'TimerFcn', {@updatePlot, handles});
+                'TimerFcn', {@updatePlot, hFigure});
 
 
 % Add button for connecting to the serial
@@ -74,7 +83,7 @@ handles.plot = uicontrol('Style', 'pushbutton', ...
 %                    'Position', [
 
 % Add axis for the plot
-handles.axis = axes('Units', 'pixels', 'Position', [50,50,500,485]);
+handles.axis = axes('Units', 'pixels', 'Position', [60,50,500,485]);
 
 % Add a menu to choose which data that should be used if subplot is used
 
@@ -85,10 +94,16 @@ handles.plot.Units = 'normalized';
 handles.axis.Units = 'normalized';
 
 % Center the GUI
-movegui(handles.figure, 'center');
+movegui(hFigure, 'center');
 
 % Show the window
-handles.figure.Visible = 'on';
+hFigure.Visible = 'on';
+
+% Store the figure handle in the handles struct
+handles.figure = hFigure;
+
+% Store all data
+guidata(hFigure, handles);
 
 % Start the timer
 %start(handles.timer);
@@ -106,17 +121,30 @@ handles.figure.Visible = 'on';
 end
 
 % Callbacks
-function updatePlot(src,event,handles)
+function updatePlot(src, event, hFigure)
     % We came here cause timer put us here
     fprintf('Well, shit works?\n');
     
+    % Get the figure data
+    handles = guidata(hFigure);
+    
     % Check if there is new data
-    if ( handles.message.waiting == 1 )
+    if ( handles.message.waiting == 0 )
         % Do nothing xD
-        fprintf('The data received %f\n', handles.message.payload);
+        fprintf('The data received %f\n', handles.message.prevIndex);
+        
+        % Create the frequency vector
+        sigLen = length(handles.message.payload);
+        resolution = (handles.fft.sampleRate / handles.fft.decimation) / handles.fft.fftLength;
+        f = 0:resolution:(sigLen - 1);
+        
+        % Plot the new data
+        %plotSpectrum(handles.message.payload, handles.plot.fftLength, (handles.plot.sampleRate/handles.plot.decimation));
+        plot(handles.axis, f, handles.message.payload)
+        title('Frequency spectrum of vital signs');
+        xlabel('Frequency [Hz]');
+        ylabel('Magnitude [V]');
     end
-    % Grab new data from handle
-    %plotSpectrum(handles.
 end
 
 function serialButton_Callback(src,event,handles)
@@ -156,16 +184,21 @@ function plotButtonCallback(src, event, handles)
     end
 end
 
-function serialConnectEventHandler(src, event, handles)
+function serialConnectEventHandler(src, event, hFigure)
     bytes = get(src, 'BytesAvailable');
     out = 0;
+    
+    % Get the handles
+    handles = guidata(hFigure);
+    %gcbo
+    
     % Should only reach here if we have a full message
     if ( bytes > 0 )
         out = fread(src, (256 + 6), 'uint8');
         %data = fscanf(src);
         %fwrite(outFile, data);
         %out = fscanf(src);
-        fprintf('The value of out %s\n', out);
+        %fprintf('The value of out %s\n', out);
         %bytes = get(src, 'BytesAvailable');
     end
 
@@ -180,24 +213,31 @@ function serialConnectEventHandler(src, event, handles)
                 % We have to deal with this
             elseif ( strcmp(type, 'B') )
                 % Data type message
-                nr = uint16( (out(3)*2^8) + out(4) );
+                nr = uint16( (out(3)*2^8) + (out(4)) );
+                fprintf('Nr = %16s\n',dec2bin(nr));
+                fprintf('Previous nr = %16s\n',dec2bin(handles.message.head.nr));
                 if ( (handles.message.head.nr + 1) == nr )
                     handles.message.head.nr = nr;
                     % Do I need to check the size of payload too?
                     
                     % Check if this is last packet
-                    morePackets = handles.message.head.size - 256*nr;
+                    morePackets = handles.message.head.size - 256*(nr-1)
                     if ( morePackets <= 256 )
                         handles.message.waiting = 0;
+                        grabData = morePackets;
+                    else
+                        grabData = 256;
                     end
                     
-                    % Now grab morePackets amount of data
+                    % Now grab more amount of data
                     % Nr cannot be equal to 1 here, it should always be
                     % bigger
-                    for i = 1:(morePackets/4);
-                        handles.message.payload(i*(256*(nr-1)/4)) = double( out(7*i)*2^24 + out(8*i)*2^16 + out(9*i)*2^8 + out(10*i) );
+                    prevIndex = handles.message.prevIndex;
+                    for i = 1:(grabData/4);
+                        slot = (i - 1) * 4;
+                        handles.message.payload(i+prevIndex) = double( out(7+slot)*2^24 + out(8+slot)*2^16 + out(9+slot)*2^8 + out(10+slot) );
                     end
-                    
+                    handles.message.prevIndex = prevIndex + i;
                     % Do we need to do something more?
                 else
                     % Well apparently we missed a packet??
@@ -219,7 +259,7 @@ function serialConnectEventHandler(src, event, handles)
             % This is a data message
             % The payload contains uint8 that should be casted to 4-byte floats
             % Grab the packet nr
-            handles.message.head.nr = uint16( (out(3)*2^8) + out(4) );
+            handles.message.head.nr = uint16( (out(3)*2^8) + (out(4)) );
             % Check if there is more than one packet here
             if ( handles.message.head.nr > 0 )
                 % Set the waiting flag
@@ -232,13 +272,16 @@ function serialConnectEventHandler(src, event, handles)
                 % Grab the payload which is 4-byte floats
                 % Starting at slot 7
                 for i = 1:(256/4);
-                    handles.message.payload(i) = double( out(7*i)*2^24 + out(8*i)*2^16 + out(9*i)*2^8 + out(10*i) );
+                    slot = (i - 1) * 4;
+                    handles.message.payload(i) = double( out(7+slot)*2^24 + out(8+slot)*2^16 + out(9+slot)*2^8 + out(10+slot) );
                 end
+                handles.message.prevIndex = i;
             else
                 % Grab the payload which is 4-byte floats
                 % Starting at slot 7
                 for i = 1:(handles.message.head.size/4);
-                    handles.message.payload(i) = double( out(7*i)*2^24 + out(8*i)*2^16 + out(9*i)*2^8 + out(10*i) );
+                    slot = (i - 1) * 4;
+                    handles.message.payload(i) = double( out(7+slot)*2^24 + out(8+slot)*2^16 + out(9+slot)*2^8 + out(10+slot) );
                 end
             end
             
@@ -246,20 +289,17 @@ function serialConnectEventHandler(src, event, handles)
         end
     end
     
+    % print values
+    handles.message.payload;
+    handles.message.head.nr
+    handles.message.prevIndex
+    
+    % Store the data
+    guidata(handles.figure, handles);
+    
     % Anything left?
     bytes = get(src, 'BytesAvailable');
-    if ( bytes > 0 )
-        fprintf('%d bytes still available\n', bytes);
-    else
-        fprintf('%d bytes still available\n', bytes);
-    end
-    
-    % Save data to UserData element of figure
-    %handles.hFigure.UserData = dataAvailable;
-    
-%    if ( dataAvailable == 1 )
-        % Convert the data        
-%    end
+    fprintf('%d bytes still available\n', bytes);
 end
 %end
 

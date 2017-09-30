@@ -136,27 +136,49 @@ void uartSend(char type, uint8_t* data, uint16_t dataSize)
     
     // Calculate how many packets will be sent
     uint16_t nrOfPackets = dataSize / PACKET_SIZE;
+    //uint16_t prevIndex = 0;
 
     // Setup the packet
 
     uint16_t i = 0;
-    for ( ; i < nrOfPackets ; i++)
+    for ( ; i < (nrOfPackets) ; i++)
     {
         // Send header
         HAL_UART_Transmit(&UartHandle, (uint8_t*)&type, 1, 0xFFFF);
         HAL_UART_Transmit(&UartHandle, (uint8_t*)&unused, 1, 0xFFFF);
-        HAL_UART_Transmit(&UartHandle, (uint8_t*)&i, 2, 0xFFFF);
-        HAL_UART_Transmit(&UartHandle, (uint8_t*)&dataSize, 2, 0xFFFF);
+        uint8_t tmp = i >> 8;
+        HAL_UART_Transmit(&UartHandle, (uint8_t*)&(tmp), 1, 0xFFFF);
+        tmp = i + 1;
+        HAL_UART_Transmit(&UartHandle, (uint8_t*)&tmp, 1, 0xFFFF);
+        tmp = dataSize >> 8;
+        HAL_UART_Transmit(&UartHandle, (uint8_t*)&(tmp), 1, 0xFFFF);
+        HAL_UART_Transmit(&UartHandle, (uint8_t*)&dataSize, 1, 0xFFFF);
 
-        uint16_t restData = dataSize - (i * PACKET_SIZE);
-        if ( restData > PACKET_SIZE )
-        {
+        int16_t restData = dataSize - (i * PACKET_SIZE);
+//        if ( restData > PACKET_SIZE )
+//        {
         	// Send the data
-        	HAL_UART_Transmit(&UartHandle, (uint8_t*)(data + i), PACKET_SIZE, 0xFFFF);
-        }
-        else
+//        	HAL_UART_Transmit(&UartHandle, (uint8_t*)(data + i*PACKET_SIZE), PACKET_SIZE, 0xFFFF);
+//        }
+//        else
+//        {
+//        	HAL_UART_Transmit(&UartHandle, (uint8_t*)(data + i*PACKET_SIZE), restData, 0xFFFF);
+//        }
+
+        // We want to loop, sending one byte at a time here
+        // How much data is left to send? Cause we always want to fill the payload with 256 bytes
+        int j = 0;
+        for ( ; j < PACKET_SIZE ; j++)
         {
-        	HAL_UART_Transmit(&UartHandle, (uint8_t*)(data + i), restData, 0xFFFF);
+        	// We shall always send 256 bytes here
+        	// How much is still available in buffer?
+        	if ( restData > 0 ) {
+        		HAL_UART_Transmit(&UartHandle, (uint8_t*)(data + i*PACKET_SIZE + j), 1, 0xFFFF);
+        	}
+        	else {
+        		tmp = 0;
+        		HAL_UART_Transmit(&UartHandle, (uint8_t*)&tmp, 1, 0xFFFF);
+        	}
         }
     }
     // Determine which type of data we have

@@ -42,6 +42,7 @@
 #include "adc/adcSetup.h"
 #include "maths/processing.h"
 #include "misc/complexBuffer.h"
+#include "misc/bytepacking.h"
 //#include "ethernet/ethernetSetup.h"
 
 
@@ -168,9 +169,10 @@ int main(void)
 
 
     /*
-     * Configure LED1 and LED3
+     * Configure LED1, LED2 and LED3
      */
     BSP_LED_Init(LED1);
+    BSP_LED_Init(LED2);
     BSP_LED_Init(LED3);
 
     /*
@@ -216,6 +218,9 @@ int main(void)
      */
     while (1)
     {
+        // Measurement for time of processing with oscilloscope
+        BSP_LED_On(LED3);
+
         /*
          * Note(klek):  Where should data be moved? IRQ not that great probably
          *              Should it be done here then, in the main-loop?
@@ -253,6 +258,9 @@ int main(void)
         }
         else
         {
+            // Measurement for time of processing with oscilloscope
+            BSP_LED_On(LED2);
+
             // Here we process data
             if ( newData == 1 ) {
                 newData = 0;
@@ -322,8 +330,11 @@ int main(void)
 #endif
 
                     // Calculate mean for the input data
-                    float32_t meanVal = 0.0f;
-                    arm_mean_f32(fftInData, FFT_SIZE*2, &meanVal);
+                    //float32_t meanVal = 0.0f;
+                    //arm_mean_f32(fftInData, FFT_SIZE*2, &meanVal);
+
+                    // Measurement for time of processing with oscilloscope
+                    BSP_LED_Off(LED3);
 
                     // Process data through FFT
                     float32_t maxVal[NR_OF_PEAKS];
@@ -356,9 +367,15 @@ int main(void)
 //                        s += 2;
 //                    }
 //                    LOG(" ]; \n");
+                    floatArray2ByteArray(fftResult, FFT_SIZE/2);
                     uartSend((char)'B',(uint8_t*)fftResult, ((FFT_SIZE/2)*sizeof(fftResult[0])));
 #endif
                 }
+                // Measurement for time of processing with oscilloscope
+                BSP_LED_Off(LED2);
+               // Measurement for time of processing with oscilloscope
+                BSP_LED_Off(LED3);
+
                 // Debug output to verify interrupts
                 LOG("%lu interrupts since last time\n", interrupted);
                 interrupted = 0;
@@ -498,7 +515,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
     else {
         // What now?
         // Turn LED3 on, to indicate something went wrong
-        BSP_LED_On(LED3);
+        //BSP_LED_On(LED3);
     }
     /* Turn LED1 on: Transfer process is correct */
     BSP_LED_Off(LED1);
@@ -534,7 +551,7 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* AdcHandle)
     else {
         // What now?
         // Turn LED3 on, to indicate something went wrong
-        BSP_LED_On(LED3);
+        //BSP_LED_On(LED3);
     }
     /* Turn LED1 on: Transfer process is correct */
     BSP_LED_On(LED1);
