@@ -50,6 +50,7 @@
 #include "../testing/superPosSignal.h"
 //#include "../testing/phaseShiftSignal.h"
 #include "../testing/testbench.h"
+#include "../testing/testbench_floats.h"
 
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{
@@ -72,6 +73,7 @@
 //#define TEST_BUTTER
 //#define TEST_ARCTAN
 //#define TEST_FFT
+#define TEST_WITH_FLOATS
 #define PRINT_PEAKS
 #define PRINT_SPECTRUM
 
@@ -236,7 +238,11 @@ int main(void)
             //copyBuffers((uint32_t*)adcBuffer, (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
 
             // Copy the test signal from the testbench
-            copyBuffers((testBenchSignal + curIndex), inData, (uint32_t)ADC_BUFFER_SIZE);
+            //copyBuffers((testBenchSignal + curIndex), inData, (uint32_t)ADC_BUFFER_SIZE);
+#ifdef TEST_WITH_FLOATS
+                // Copy floating point data
+            memcpy(inData, (testBenchSignal_floats + curIndex), ADC_BUFFER_SIZE*sizeof(float32_t));
+#endif
 
             // Indicate new data is available for processing
             newData = 1;
@@ -251,8 +257,11 @@ int main(void)
             //copyBuffers((uint32_t*)(adcBuffer + (ADC_BUFFER_SIZE/2)), (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
 
             // Copy the test signal from the testbench
-            copyBuffers((testBenchSignal + curIndex), inData, (uint32_t)ADC_BUFFER_SIZE);
-
+            //copyBuffers((testBenchSignal + curIndex), inData, (uint32_t)ADC_BUFFER_SIZE);
+#ifdef TEST_WITH_FLOATS
+                // Copy floating point data
+            memcpy(inData, (testBenchSignal_floats + curIndex), ADC_BUFFER_SIZE*sizeof(float32_t));
+#endif
             // Indicate new data is available for processing
             newData = 1;
         }
@@ -264,6 +273,7 @@ int main(void)
             // Here we process data
             if ( newData == 1 ) {
                 newData = 0;
+
 #ifdef TEST_BUTTER
                 memcpy(inData, superPosSignal, ((FFT_SIZE * 2) * sizeof(float32_t)) );
 #endif
@@ -513,7 +523,11 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
         statusVector |= FULL_BUFFER_INT;
 
         // Testing the algorithm
+#ifdef TEST_WITH_FLOATS
+        curIndex += ADC_BUFFER_SIZE;
+#else
         curIndex += ADC_BUFFER_SIZE / 2;
+#endif
         if ( curIndex >= testBenchLength ) {
             curIndex = 0;
         }
@@ -549,7 +563,11 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* AdcHandle)
         statusVector |= HALF_BUFFER_INT;
 
         // Testing the algorithm
+#ifdef TEST_WITH_FLOATS
+        curIndex += ADC_BUFFER_SIZE;
+#else
         curIndex += ADC_BUFFER_SIZE / 2;
+#endif
         if ( curIndex >= testBenchLength ) {
             curIndex = 0;
         }

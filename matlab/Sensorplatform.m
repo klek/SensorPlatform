@@ -21,8 +21,8 @@ hFigure = figure(10);
 hFigure.Visible = 'off';
 hFigure.Name = 'Sensorplatform';
 hFigure.Position = [360,500,750,585];
-hFigure.MenuBar = 'none';
-hFigure.ToolBar = 'none';
+%hFigure.MenuBar = 'none';
+%hFigure.ToolBar = 'none';
 %figure('Name', 'Sensorplatform', 'Visible', 'off', 'Position', [360,500,750,585]);
 
 % Get the handles
@@ -92,6 +92,17 @@ handles.decimationMenu = uicontrol('Style', 'popupmenu', ...
                     'Position', [590,400,150,30], ...
                     'Callback', {@decimationCallback, hFigure});
 
+% Adding a check-box, to choose to print datatips or not
+%handles.decimationText = uicontrol('Style', 'text', ...
+%                    'String', 'Decimation', ...
+%                    'Position', [590,420,150,30]);
+handles.checkboxdatatips = uicontrol('Style', 'checkbox', ...
+                    'String', 'Show datatips', ...
+                    'Position', [590,370,150,30], ...
+                    'Callback', {@checkboxCallback, hFigure});
+% Don't show datatips per default
+handles.datatips.show = 0;
+                
 % Adding a text-box, to insert sample rate in
 %handles.decimationText = uicontrol('Style', 'text', ...
 %                    'String', 'Decimation', ...
@@ -175,7 +186,9 @@ function updatePlot(src, ~, hFigure)
         drawDatatip = 1;
         
         % We can also remove the data now
-        handles.message.payload.spectrum = 0;
+        %for i = 1:sigLen;
+        %    handles.message.payload.spectrum(i) = 0;
+        %end
     end
     
     % Mark the peaks with data tips
@@ -199,11 +212,11 @@ function updatePlot(src, ~, hFigure)
         % Thresholds? Should be done in MCU?
         
         % Should we draw datatips?
-        if ( drawDatatip == 1 )
+        if ( handles.datatips.show == 1 && drawDatatip == 1 )
             % Only mark the two highest peaks
             peakIndex = [peakIndex(1) peakIndex(2)];
             % Mark the peaks in the plot
-            %makedatatip(hPlot, peakIndex);
+            makedatatip(hPlot, peakIndex);
         end
         
         % Remove the peak data
@@ -273,6 +286,23 @@ function decimationCallback(src,~,hFigure)
             dec = 16;
     end
     handles.fft.decimation = dec;
+    
+    % Update the struct
+    guidata(hFigure, handles);
+end
+
+function checkboxCallback(src,~,hFigure)
+    % Grab the struct
+    handles = guidata(hFigure);
+    
+    % Get the value of the checkbox
+    val = get(src, 'Value');
+    switch val
+        case 0
+            handles.datatips.show = 0;
+        case 1
+            handles.datatips.show = 1;
+    end
     
     % Update the struct
     guidata(hFigure, handles);

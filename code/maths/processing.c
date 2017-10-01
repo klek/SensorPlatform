@@ -54,9 +54,9 @@ void copyBuffers(uint32_t* inData, float32_t* outData, uint32_t sizeOfOutData)
 	for ( ; i < sizeOfOutData ; i += 2)
 	{
 		// Copy I_DATA into first slot of outData
-		outData[i] = ( (float32_t)( inData[i] & I_DATA_POS ) - 2048.0 );
+		outData[i] = ( (float32_t)( inData[i] & I_DATA_POS ) );//- 2048.0f );
 		// Copy Q_DATA into second slot of outData, shift it down as well
-		outData[i + 1] = (float32_t)( (float32_t)(( inData[i] & Q_DATA_POS ) >> 16 ) - 2048.0 );
+		outData[i + 1] = (float32_t)( (float32_t)(( inData[i] & Q_DATA_POS ) >> 16 ) );//- 2048.0f );
 	}
 }
 

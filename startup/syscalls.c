@@ -87,7 +87,7 @@ return len;
 
 int _write(int file, char *ptr, int len)
 {
-	int DataIdx;
+//	int DataIdx;
 
 	// NOTE(klek): 	Modifying to fit the packeting used in this example
 	// 				We want to write the entire array instantly
