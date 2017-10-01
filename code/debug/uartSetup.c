@@ -135,20 +135,41 @@ void uartSend(char type, uint8_t* data, uint16_t dataSize)
     uint8_t unused = 0;
     
     // Calculate how many packets will be sent
-    uint16_t nrOfPackets = dataSize / PACKET_SIZE;
+    // We should always send one packet unless size is 0
+    uint16_t nrOfPackets;
+    if ( dataSize >= PACKET_SIZE ) {
+    	nrOfPackets = dataSize / PACKET_SIZE;
+    }
+    else if ( dataSize > 0 ){
+    	nrOfPackets = 1;
+    }
+    else {
+    	// Well shiet...Why are we here??
+    }
+
     //uint16_t prevIndex = 0;
 
     // Setup the packet
-
     uint16_t i = 0;
     for ( ; i < (nrOfPackets) ; i++)
     {
-        // Send header
+        /*
+         * Sending the header
+         */
+    	// Sending the type + the empty byte
         HAL_UART_Transmit(&UartHandle, (uint8_t*)&type, 1, 0xFFFF);
         HAL_UART_Transmit(&UartHandle, (uint8_t*)&unused, 1, 0xFFFF);
+        // Sending the packet nr
+        // This should be set to zero if there is only one packet to send
+        // How to do that?
         uint8_t tmp = i >> 8;
         HAL_UART_Transmit(&UartHandle, (uint8_t*)&(tmp), 1, 0xFFFF);
-        tmp = i + 1;
+        if ( nrOfPackets == 1 ) {
+        	tmp = i;
+        }
+        else {
+        	tmp = i + 1;
+        }
         HAL_UART_Transmit(&UartHandle, (uint8_t*)&tmp, 1, 0xFFFF);
         tmp = dataSize >> 8;
         HAL_UART_Transmit(&UartHandle, (uint8_t*)&(tmp), 1, 0xFFFF);
@@ -181,29 +202,6 @@ void uartSend(char type, uint8_t* data, uint16_t dataSize)
         	}
         }
     }
-    // Determine which type of data we have
-/*    switch(type)
-    {
-        case 'A':
-            // Debugging message, should use printf for now
-            break;
-
-        case 'B':
-            // This is a data message
-            // Send header
-            HAL_UART_Transmit(&UartHandle, (uint8_t*)&type, 1, 0xFFFF);
-            HAL_UART_Transmit(&UartHandle, (uint8_t*)&unused, 1, 0xFFFF);
-            HAL_UART_Transmit(&UartHandle, (uint8_t*)&dataSize, 2, 0xFFFF);
-            // Send the data
-            HAL_UART_Transmit(&UartHandle, data, dataSize, 0xFFFF);
-            // End transmission with ??
-            break;
-
-        default:
-            // None of above are true, then we have a problem
-            break;
-    }
-*/
 }
 
 /**

@@ -11,9 +11,9 @@ function Sensorplatform
 % For save data
 outputFile = fopen('../testing/output/output.txt', 'wt');
 % Vector to store data we received in
-data = 0;
+%data = 0;
 % Flag to indicate if data is available
-dataAvailable = 0;
+%dataAvailable = 0;
 
 % Construct the UI
 % Create the figure window
@@ -21,6 +21,8 @@ hFigure = figure(10);
 hFigure.Visible = 'off';
 hFigure.Name = 'Sensorplatform';
 hFigure.Position = [360,500,750,585];
+hFigure.MenuBar = 'none';
+hFigure.ToolBar = 'none';
 %figure('Name', 'Sensorplatform', 'Visible', 'off', 'Position', [360,500,750,585]);
 
 % Get the handles
@@ -31,10 +33,12 @@ handles.message.head.type = char();
 handles.message.head.nr = uint16(0);
 handles.message.head.size = uint16(0);
 %handles.message.head.size2 = 0;
-handles.message.payload = 0;
+handles.message.payload.spectrum = 0;
+handles.message.payload.peakdata = 0;
 handles.message.waiting = 0;
 handles.message.prevIndex = 0;
 handles.message.newData = 0;
+handles.message.newPeakData = 0;
 
 % The fft struct
 handles.fft.fftLength = 2048;
@@ -73,16 +77,31 @@ handles.serialButton = uicontrol('Style', 'pushbutton', ...
                     'Position', [590,520,150,30], ...
                     'Callback', {@serialButton_Callback,handles});
 
-% Add button for subplot
+% Add button for plot
 handles.plot = uicontrol('Style', 'pushbutton', ...
                     'String', 'Plot', ...
                     'Position', [590,480,150,30], ...
                     'Callback', {@plotButtonCallback, handles});
 
-% Adding a drop-down menu, to choose data from
-%hMenu = uicontrol('Style', 'dropdownmenu', ...
-%                    'Position', [
+% Adding a drop-down menu, to choose decimation from
+handles.decimationText = uicontrol('Style', 'text', ...
+                    'String', 'Decimation', ...
+                    'Position', [590,420,150,30]);
+handles.decimationMenu = uicontrol('Style', 'popupmenu', ...
+                    'String', {'1','2','4','8','16'}, ...
+                    'Position', [590,400,150,30], ...
+                    'Callback', {@decimationCallback, hFigure});
 
+% Adding a text-box, to insert sample rate in
+%handles.decimationText = uicontrol('Style', 'text', ...
+%                    'String', 'Decimation', ...
+%                    'Position', [590,440,150,30]);
+%handles.decimationMenu = uicontrol('Style', 'popupmenu', ...
+%                    'String', {'1','2','4','8','16'}, ...
+%                    'Position', [590,400,150,30], ...
+%                    'Callback', {@decimationCallback, hFigure});
+
+                
 % Add axis for the plot
 handles.axis = axes('Units', 'pixels', 'Position', [60,50,500,485]);
 
@@ -122,9 +141,12 @@ guidata(hFigure, handles);
 end
 
 % Callbacks
-function updatePlot(src, event, hFigure)
+function updatePlot(src, ~, hFigure)
     % We came here cause timer put us here
-    fprintf('Well, shit works?\n');
+    %fprintf('Well, shit works?\n');
+    
+    % Local variable to indicate if datatips should be drawn
+    drawDatatip = 0;
     
     % Get the figure data
     handles = guidata(hFigure);
@@ -136,26 +158,64 @@ function updatePlot(src, event, hFigure)
         %fprintf('The data received %f\n', handles.message.prevIndex);
         
         % Create the frequency vector
-        sigLen = length(handles.message.payload);
+        sigLen = length(handles.message.payload.spectrum);
         resolution = (handles.fft.sampleRate / handles.fft.decimation) / handles.fft.fftLength;
-        f = 0:resolution:(sigLen - 1);
+        f = 0:resolution:((sigLen - 1)*resolution);
         
         % Plot the new data
-        %plotSpectrum(handles.message.payload, handles.plot.fftLength, (handles.plot.sampleRate/handles.plot.decimation));
-        hPlot = plot(handles.axis, f, handles.message.payload);
+        %plotSpectrum(handles.message.payload.spectrum, handles.plot.fftLength, (handles.plot.sampleRate/handles.plot.decimation));
+        hPlot = plot(handles.axis, f, handles.message.payload.spectrum);
+        handles.plot = hPlot;
         title('Frequency spectrum of vital signs');
         xlabel('Frequency [Hz]');
         ylabel('Magnitude [V]');
+        %axis([-100 1050 0 (max(handles.message.payload.spectrum) + 0.1)])
         
-        % Mark the peaks with data tips
-        makedatatip(hPlot, [41 51])
+        % Indicate new datatips should be drawn
+        drawDatatip = 1;
+        
+        % We can also remove the data now
+        handles.message.payload.spectrum = 0;
     end
+    
+    % Mark the peaks with data tips
+    %makedatatip(hPlot, [41 51])
+    if ( handles.message.newPeakData == 1 )
+        handles.message.newPeakData = 0;
+        % Mark the peaks with data tips specified from the MCU
+        % Indexes of peaks is every second slots
+        peakIndex = handles.message.payload.peakdata(2:2:end);
+        % POTENTIAL PROBLEM HERE...THIRD AND FIFTH SLOT IS HALFED IN
+        % VALUE???
+
+        % Add 1 to each element, to match the array indexes between C and matlab
+        peakIndex = peakIndex + 1;
+
+        % Grab the peak values
+        peakVal = handles.message.payload.peakdata(1:2:end);
+        % POTENTIAL PROBLEM HERE...FOURTH SLOT IS HALFED IN VALUE???
+
+        % Which peaks should be used?
+        % Thresholds? Should be done in MCU?
+        
+        % Should we draw datatips?
+        if ( drawDatatip == 1 )
+            % Only mark the two highest peaks
+            peakIndex = [peakIndex(1) peakIndex(2)];
+            % Mark the peaks in the plot
+            %makedatatip(hPlot, peakIndex);
+        end
+        
+        % Remove the peak data
+        handles.message.payload.peakdata = 0;
+    end
+    
     
     % Make sure we update the structure
     guidata(handles.figure, handles);
 end
 
-function serialButton_Callback(src,event,handles)
+function serialButton_Callback(src,~,handles)
     % Check if connection is open
     %if ( obj.Status == 'closed' )
     if ( strcmp(handles.serial.Status, 'closed') )
@@ -175,7 +235,7 @@ function serialButton_Callback(src,event,handles)
     end
 end
 
-function plotButtonCallback(src, event, handles)
+function plotButtonCallback(src, ~, handles)
     % User wants us to plot
     % Get the state of the button
     buttonState = src.String;
@@ -192,7 +252,33 @@ function plotButtonCallback(src, event, handles)
     end
 end
 
-function serialConnectEventHandler(src, event, hFigure)
+function decimationCallback(src,~,hFigure)
+    % Grab the struct
+    handles = guidata(hFigure);
+    % Grab the event
+    str = get(src, 'String');
+    val = get(src, 'Value');
+    % Decimation is per standard 1
+    dec = 1;
+    switch str{val}
+        case '1'
+            dec = 1;
+        case '2'
+            dec = 2;
+        case '4'
+            dec = 4;
+        case '8'
+            dec = 8;
+        case '16'
+            dec = 16;
+    end
+    handles.fft.decimation = dec;
+    
+    % Update the struct
+    guidata(hFigure, handles);
+end
+
+function serialConnectEventHandler(src, ~, hFigure)
     bytes = get(src, 'BytesAvailable');
     out = 0;
     
@@ -218,18 +304,65 @@ function serialConnectEventHandler(src, event, hFigure)
         if ( strcmp(handles.message.head.type, type) )
             % Check which type it is
             if ( strcmp(type, 'A') )
-                % We have to deal with this
-            elseif ( strcmp(type, 'B') )
-                % Data type message
+                % This is a debug message in text form
+                % The payload contains chars in ascii
+                % We write this data to console and to logfile
+                % Grab packet nr
                 nr = uint16( (out(3)*2^8) + (out(4)) );
-                fprintf('Nr = %16s\n',dec2bin(nr));
-                fprintf('Previous nr = %16s\n',dec2bin(handles.message.head.nr));
+                %fprintf('Nr = %16s\n',dec2bin(nr));
+                %fprintf('Previous nr = %16s\n',dec2bin(handles.message.head.nr));
                 if ( (handles.message.head.nr + 1) == nr )
                     handles.message.head.nr = nr;
                     % Do I need to check the size of payload too?
                     
                     % Check if this is last packet
-                    morePackets = handles.message.head.size - 256*(nr-1)
+                    morePackets = handles.message.head.size - 256*(nr-1);
+                    if ( morePackets <= 256 )
+                        handles.message.waiting = 0;
+                        grabData = morePackets;
+                    else
+                        grabData = 256;
+                    end
+                    % Now grab more amount of data
+                    % Nr cannot be equal to 1 here, it should always be
+                    % bigger
+                    prevIndex = handles.message.prevIndex;
+                    for i = 1:(grabData);
+                        slot = (i - 1);
+                        handles.message.payload.text(i+prevIndex) = char(out(7+slot));
+                    end
+                    handles.message.prevIndex = prevIndex + i;
+                    % Get the lenght of the buffer
+                    bufLen = length(handles.message.payload.text);
+                    % Fill rest of the buffer with whitespace
+                    for i = (handles.message.prevIndex):bufLen;
+                        handles.message.payload.text(i) = char(' ');
+                    end
+                    % Do we need to do something more?
+                    
+                    % If there is no more message
+                    % Print it out to console and to file
+                    if ( handles.message.waiting == 0 )
+                        fprintf('%s\n',handles.message.payload.text);
+                        % Maybe add timestamp here in future
+                        fprintf(handles.outFile, '%s\n', handles.message.payload.text);
+                    end
+                else
+                    % Well apparently we missed a packet??
+                    fprintf('Missed a packet??\n');
+                end
+
+            elseif ( strcmp(type, 'B') )
+                % Frequency spectrum data message
+                nr = uint16( (out(3)*2^8) + (out(4)) );
+                %fprintf('Nr = %16s\n',dec2bin(nr));
+                %fprintf('Previous nr = %16s\n',dec2bin(handles.message.head.nr));
+                if ( (handles.message.head.nr + 1) == nr )
+                    handles.message.head.nr = nr;
+                    % Do I need to check the size of payload too?
+                    
+                    % Check if this is last packet
+                    morePackets = handles.message.head.size - 256*(nr-1);
                     if ( morePackets <= 256 )
                         handles.message.waiting = 0;
                         grabData = morePackets;
@@ -243,12 +376,7 @@ function serialConnectEventHandler(src, event, hFigure)
                     prevIndex = handles.message.prevIndex;
                     for i = 1:(grabData/4);
                         slot = (i - 1) * 4;
-                        tmp1 = uint32(bitshift(out(7+slot),24));
-                        tmp2 = uint32(bitshift(out(8+slot),16));
-                        tmp3 = uint32(bitshift(out(9+slot),8));
-                        tmp4 = uint32(out(10+slot));
-                        handles.message.payload(i+prevIndex) = typecast( (tmp1 + tmp2 + tmp3 + tmp4), 'single');
-                        %handles.message.payload(i+prevIndex) = double( out(7+slot)*2^24 + out(8+slot)*2^16 + out(9+slot)*2^8 + out(10+slot) );
+                        handles.message.payload.spectrum(i+prevIndex) = unpackFloat([out(7+slot) out(8+slot) out(9+slot) out(10+slot)]);
                     end
                     handles.message.prevIndex = prevIndex + i;
                     % Do we need to do something more?
@@ -257,6 +385,47 @@ function serialConnectEventHandler(src, event, hFigure)
                     if ( handles.message.waiting == 0 )
                         % Indicate an update is needed
                         handles.message.newData = 1;
+                        handles.message.prevIndex = 0;
+                    end
+                else
+                    % Well apparently we missed a packet??
+                    fprintf('Missed a packet??\n');
+                end
+            elseif ( strcmp(type, 'C') )
+                % This is a peakData message
+                % Frequency spectrum data message
+                nr = uint16( (out(3)*2^8) + (out(4)) );
+                %fprintf('Nr = %16s\n',dec2bin(nr));
+                %fprintf('Previous nr = %16s\n',dec2bin(handles.message.head.nr));
+                if ( (handles.message.head.nr + 1) == nr )
+                    handles.message.head.nr = nr;
+                    % Do I need to check the size of payload too?
+                    
+                    % Check if this is last packet
+                    morePackets = handles.message.head.size - 256*(nr-1);
+                    if ( morePackets <= 256 )
+                        handles.message.waiting = 0;
+                        grabData = morePackets;
+                    else
+                        grabData = 256;
+                    end
+                    
+                    % Now grab more amount of data
+                    % Nr cannot be equal to 1 here, it should always be
+                    % bigger
+                    prevIndex = handles.message.prevIndex;
+                    for i = 1:(grabData/4);
+                        slot = (i - 1) * 4;
+                        handles.message.payload.peakData(i+prevIndex) = unpackFloat([out(7+slot) out(8+slot) out(9+slot) out(10+slot)]);
+                    end
+                    handles.message.prevIndex = prevIndex + i;
+                    % Do we need to do something more?
+                    
+                    % Was this the last data?
+                    if ( handles.message.waiting == 0 )
+                        % Indicate an update is needed
+                        handles.message.newPeakData = 1;
+                        handles.message.prevIndex = 0;
                     end
                 else
                     % Well apparently we missed a packet??
@@ -266,6 +435,8 @@ function serialConnectEventHandler(src, event, hFigure)
         else
             % We have a problem :/
             fprintf('Packet types not equal...\n');
+            % Set waiting variable to zero
+            handles.message.waiting = 0;
         end
     else
         % This is a new packet
@@ -274,6 +445,48 @@ function serialConnectEventHandler(src, event, hFigure)
         if ( strcmp(handles.message.head.type, 'A') )
             % This is a debug message in text form
             % The payload contains chars in ascii
+            % We write this data to console and to logfile
+            % Grab packet nr
+            handles.message.head.nr = uint16( (out(3)*2^8) + (out(4)) );
+            % Check if there is more than one packet here
+            if ( handles.message.head.nr > 0 )
+                % Set the waiting flag
+                handles.message.waiting = 1;
+            end
+            % Grab how much data we should expect, in bytes
+            handles.message.head.size = uint16( (out(5)*2^8) + out(6) );
+            
+            if ( handles.message.head.size >= 256 )
+                % Grab the payload which is chars
+                % Starting at slot 7
+                for i = 1:(256);
+                    slot = (i - 1);
+                    handles.message.payload.text(i) = char(out(7+slot));
+                end
+                handles.message.prevIndex = i;
+            else
+                % Grab the payload which is 4-byte floats
+                % Starting at slot 7
+                for i = 1:(handles.message.head.size);
+                    slot = (i - 1);
+                    handles.message.payload.text(i) = char(out(7+slot));
+                end
+                % Get the lenght of the buffer
+                bufLen = length(handles.message.payload.text);
+                % Fill rest of the buffer with whitespace
+                for i = (handles.message.head.size):bufLen;
+                    handles.message.payload.text(i) = char(' ');
+                end
+            end
+            
+            % If there is no more message
+            % Print it out to console and to file
+            if ( handles.message.waiting == 0 )
+                fprintf('%s\n',handles.message.payload.text);
+                % Maybe add timestamp here in future
+                fprintf(handles.outFile, '%s\n', handles.message.payload.text);
+            end
+            
         elseif ( strcmp(handles.message.head.type, 'B') )
             % This is a data message
             % The payload contains uint8 that should be casted to 4-byte floats
@@ -292,14 +505,7 @@ function serialConnectEventHandler(src, event, hFigure)
                 % Starting at slot 7
                 for i = 1:(256/4);
                     slot = (i - 1) * 4;
-                    % Creating a byte array
-                    %A = uint8([ out(7+slot) out(8+slot) out(9+slot) out(10+slot) ]);
-                    tmp1 = uint32(bitshift(out(7+slot),24));
-                    tmp2 = uint32(bitshift(out(8+slot),16));
-                    tmp3 = uint32(bitshift(out(9+slot),8));
-                    tmp4 = uint32(out(10+slot));
-                    handles.message.payload(i) = typecast( (tmp1 + tmp2 + tmp3 + tmp4), 'single');
-                    %handles.message.payload(i) = double( out(7+slot)*2^24 + out(8+slot)*2^16 + out(9+slot)*2^8 + out(10+slot) );
+                    handles.message.payload.spectrum(i) = unpackFloat([out(7+slot) out(8+slot) out(9+slot) out(10+slot)]);
                 end
                 handles.message.prevIndex = i;
             else
@@ -307,42 +513,88 @@ function serialConnectEventHandler(src, event, hFigure)
                 % Starting at slot 7
                 for i = 1:(handles.message.head.size/4);
                     slot = (i - 1) * 4;
-                    tmp1 = uint32(bitshift(out(7+slot),24));
-                    tmp2 = uint32(bitshift(out(8+slot),16));
-                    tmp3 = uint32(bitshift(out(9+slot),8));
-                    tmp4 = uint32(out(10+slot));
-                    handles.message.payload(i) = typecast( (tmp1 + tmp2 + tmp3 + tmp4), 'single');
-                    %handles.message.payload(i) = double( out(7+slot)*2^24 + out(8+slot)*2^16 + out(9+slot)*2^8 + out(10+slot) );
+                    handles.message.payload.spectrum(i) = unpackFloat([out(7+slot) out(8+slot) out(9+slot) out(10+slot)]);
                 end
             end
             
             % Do we need to do anything more?
+        elseif ( strcmp(handles.message.head.type, 'C') )
+            % This is a peakData message
+            % Grab the packet nr
+            handles.message.head.nr = uint16( (out(3)*2^8) + (out(4)) );
+            % Check if there is more than one packet here
+            if ( handles.message.head.nr > 0 )
+                % Set the waiting flag
+                handles.message.waiting = 1;
+            end
+            % Grab how much data we should expect, in bytes
+            handles.message.head.size = uint16( (out(5)*2^8) + out(6) );
+            
+            if ( handles.message.head.size >= 256 )
+                % Grab the payload which is 4-byte floats
+                % Starting at slot 7
+                for i = 1:(256/4);
+                    slot = (i - 1) * 4;
+                    handles.message.payload.peakdata(i) = unpackFloat([out(7+slot) out(8+slot) out(9+slot) out(10+slot)]);
+                end
+                handles.message.prevIndex = i;
+            else
+                % Grab the payload which is 4-byte floats
+                % Starting at slot 7
+                for i = 1:(handles.message.head.size/4);
+                    slot = (i - 1) * 4;
+                    handles.message.payload.peakdata(i) = unpackFloat([out(7+slot) out(8+slot) out(9+slot) out(10+slot)]);
+                end
+            end
+            
+            % Indicate we have new peakData
+            if ( handles.message.waiting == 0 )
+                % Indicate an update is needed
+                handles.message.newPeakData = 1;
+            end
         end
     end
     
     % print values
-    handles.message.payload;
-    handles.message.head.nr
-    handles.message.prevIndex
+    %handles.message.payload.spectrum
+    %handles.message.head.nr
+    %handles.message.prevIndex
     
     % Store the data
     guidata(handles.figure, handles);
     
     % Anything left?
-    bytes = get(src, 'BytesAvailable');
-    fprintf('%d bytes still available\n', bytes);
+    %bytes = get(src, 'BytesAvailable');
+    %fprintf('%d bytes still available\n', bytes);
 end
 %end
 
-function unpackUART(data)
-% This function should unpack the data received
-% into its header and payload component
+function res = unpackFloat(data)
+% This function should unpack the incoming data and return it as a float
+% Data is expected to be an array of bytes in BIG ENDIAN FORMAT
 
-% Header is total of 4 bytes long
-% Containing:
-% Type NULL Size Size
+% Cast the array to uint8
+data = uint8(data);
+% Get the size of data
+len = length(data);
 
-% Payload is the data in size long
-% This should match up the length of the remaining vector in bytes
+% Length is either 4 or 8
+if ( len == 4 )
+    % Add the result together
+    res = bitshift(uint32(data(1)),24) + bitshift(uint32(data(2)),16) + bitshift(uint32(data(3)),8) + uint32(data(4));
+    % Change the type to single precision float
+    res = typecast(res, 'single');
+elseif (len == 8 )
+    % Add the result together
+    res_high = bitshift(uint64(data(1)),56) + bitshift(uint64(data(2)),48) + bitshift(uint64(data(3)),40) + bitshift(uint64(data(4)),32);
+    res_low = bitshift(uint64(data(5)),24) + bitshift(uint64(data(6)),16) + bitshift(uint64(data(7)),8) + uint64(data(8));
+    res = res_high + res_low;
+    % Change the type to double precision float
+    res = typecast(res, 'double');
+else
+    % Something is wrong
+    fprintf('Unrecognized format...input needs to be either 4 or 8 bytes long\n');
+    res = 0;
+end
 
 end

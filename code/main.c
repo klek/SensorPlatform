@@ -71,7 +71,7 @@
 
 //#define TEST_BUTTER
 //#define TEST_ARCTAN
-#define TEST_FFT
+//#define TEST_FFT
 #define PRINT_PEAKS
 #define PRINT_SPECTRUM
 
@@ -304,7 +304,7 @@ int main(void)
 #endif
 
                 // Calculating the phase for the incoming data
-                phaseCalc((float32_t*)inData, validItems);
+//                phaseCalc((float32_t*)inData, validItems);
 
 
                 // Updating the ring buffer with new values
@@ -347,10 +347,21 @@ int main(void)
                      * Print the result to debugging terminal for capture in MATLAB
                      */
                     int s = 0;
-                    for (s = 0; s < NR_OF_PEAKS; s++)
-                    {
-                        LOG("Max value of %f at bin %lu (%.2f Hz) \n", maxVal[s], resIndex[s], (float32_t)(1.0f/DECIMATION_FACTOR)*resIndex[s]);
+//                    for (s = 0; s < NR_OF_PEAKS; s++)
+//                    {
+//                        LOG("Max value of %f at bin %lu (%.2f Hz) \n", maxVal[s], resIndex[s], (float32_t)(1.0f/DECIMATION_FACTOR)*resIndex[s]);
+//                    }
+
+                    // The peaks should be packed together as [{val1, index_of_val1},{val2, index_of_val2},...]
+                    float32_t peakData[NR_OF_PEAKS*2];
+                    for ( s = 0 ; s < NR_OF_PEAKS; s++) {
+                    	peakData[s*2] = maxVal[s];
+                    	peakData[s*2+1] = (float32_t)resIndex[s];
                     }
+                    floatArray2ByteArray(peakData, NR_OF_PEAKS*2);
+                    //floatArray2ByteArray((float32_t)resIndex, NR_OF_PEAKS);
+                    uartSend((char)'C', (uint8_t*)peakData, ((NR_OF_PEAKS*2)*sizeof(maxVal[0])));
+                    //uartSend((char)'C', (uint8_t*)resIndex, ((NR_OF_PEAKS)*sizeof(maxVal[0])));
 #endif
 
 #ifdef PRINT_SPECTRUM
@@ -377,7 +388,7 @@ int main(void)
                 BSP_LED_Off(LED3);
 
                 // Debug output to verify interrupts
-                LOG("%lu interrupts since last time\n", interrupted);
+                LOG("%lu interrupts since last time\n", interrupted, interrupted);
                 interrupted = 0;
             }
         }

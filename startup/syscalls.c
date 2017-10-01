@@ -41,6 +41,9 @@
 extern int errno;
 extern int __io_putchar(int ch) __attribute__((weak));
 extern int __io_getchar(void) __attribute__((weak));
+// Testing
+extern void uartSend(char type, uint8_t* data, uint16_t dataSize);
+
 
 register char * stack_ptr asm("sp");
 
@@ -86,10 +89,13 @@ int _write(int file, char *ptr, int len)
 {
 	int DataIdx;
 
-	for (DataIdx = 0; DataIdx < len; DataIdx++)
-	{
-		__io_putchar(*ptr++);
-	}
+	// NOTE(klek): 	Modifying to fit the packeting used in this example
+	// 				We want to write the entire array instantly
+	uartSend((char)'A', (uint8_t*)ptr, (uint16_t)len);
+//	for (DataIdx = 0; DataIdx < len; DataIdx++)
+//	{
+//		__io_putchar(*ptr++);
+//	}
 	return len;
 }
 

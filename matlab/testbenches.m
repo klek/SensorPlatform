@@ -5,8 +5,10 @@ function [phaseShiftSignal, t] = testbenches(decimation)
 
 % Defining the frequencies
 RESP_RATE = 16 / 60;
-HEART_RATE = 70 / 60; % This should be lower than filter threshold
-MEDIUM_FREQ_2 = 10; % This should be higher than filter threshold
+HEART_RATE = 70 / 60; 
+LOW_FREQ = 10;
+MEDIUM_FREQ_1 = 40;
+MEDIUM_FREQ_2 = 50; 
 HIGH_FREQ = 1000;
 DC_OFFSET = 1.5;
 
@@ -21,7 +23,8 @@ t = (0:myLen-1) * timePeriod;
 
 % Generating a superposition signal of the four frequencies
 a = 2 * pi * t;
-superPosSignal_orig = (0.3*sin(a*RESP_RATE) + 0.03*sin(a*HEART_RATE) + 0.1*sin(a*MEDIUM_FREQ_2) + 0.4*sin(a*HIGH_FREQ));
+%superPosSignal_orig = (0.3*sin(a*RESP_RATE) + 0.03*sin(a*HEART_RATE) + 0.1*sin(a*MEDIUM_FREQ_2) + 0.4*sin(a*HIGH_FREQ));
+superPosSignal_orig = (0.5*sin(a*LOW_FREQ) + 0.5*sin(a*MEDIUM_FREQ_1) + 0.5*sin(a*MEDIUM_FREQ_2) + 0.5*sin(a*HIGH_FREQ));
 
 % Generating the phaseshifted signal
 %pskSignal_real = cos(superPosSignal_orig) + DC_OFFSET;
