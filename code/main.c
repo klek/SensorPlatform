@@ -77,11 +77,17 @@
 #define PRINT_PEAKS
 #define PRINT_SPECTRUM
 
+// Timer clock speed
+#define TIMER_CLK_SPEED				2048
+
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* ADC handler declaration */
 ADC_HandleTypeDef AdcAHandle;
 ADC_HandleTypeDef AdcBHandle;
+
+/* Timer handler declaration */
+TIM_HandleTypeDef TimerHandle;
 
 // ETH handler declaration
 //ETH_HandleTypeDef EthHandle;
@@ -110,6 +116,8 @@ void SystemClock_Config(void);
 //void ADC_IRQHandler(void);
 void DMA2_Stream0_IRQHandler(void);
 //void DMA2_Stream3_IRQHandler(void);
+void TIM2_IRQHandler(void);
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 
 // Static functions
 //static void Error_Handler(void);
@@ -198,6 +206,32 @@ int main(void)
     //netifConfig(&gnetif);
 
     /*
+     * Setup the timer for ADC-sampling
+     */
+    //timerSetup();
+    __TIM2_CLK_ENABLE();
+    TimerHandle.Instance = TIM2;
+    TimerHandle.Init.Period = (uint32_t)((SystemCoreClock/ 2) / TIMER_CLK_SPEED) - 1;
+    TimerHandle.Init.Prescaler = 0;
+    TimerHandle.Init.ClockDivision = 0; //TIM_CLOCKDIVISION_DIV1;
+    TimerHandle.Init.CounterMode = TIM_COUNTERMODE_UP;
+    TimerHandle.Init.RepetitionCounter = 0;
+    TimerHandle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    if ( HAL_TIM_Base_Init(&TimerHandle) != HAL_OK ) {
+    	LOG("ERROR: Failed to init the timer!\n");
+    }
+    // Set up the TRGO
+    TIM_MasterConfigTypeDef masterConfig;
+    masterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+    masterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+    if ( HAL_TIMEx_MasterConfigSynchronization(&TimerHandle, &masterConfig) != HAL_OK )
+    {
+    	LOG("ERROR: Failed to setup TRGO update\n");
+    }
+//    HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
+//    HAL_NVIC_EnableIRQ(TIM2_IRQn);
+
+    /*
      * Setup the two ADCs
      */
     adcSetup(&AdcAHandle, &AdcBHandle);
@@ -212,6 +246,15 @@ int main(void)
     }
 
     /*
+     * Start the timer
+     */
+    //if ( HAL_TIM_Base_Start_IT(&TimerHandle) != HAL_OK )
+    if ( HAL_TIM_Base_Start(&TimerHandle) != HAL_OK )
+    {
+    	LOG("ERROR: Failer to start the timer!\n");
+    }
+
+    /*
      * NOTE(klek):  More initialization needed?
      */
 
@@ -221,7 +264,7 @@ int main(void)
     while (1)
     {
         // Measurement for time of processing with oscilloscope
-        BSP_LED_On(LED3);
+        //BSP_LED_On(LED3);
 
         /*
          * Note(klek):  Where should data be moved? IRQ not that great probably
@@ -344,7 +387,7 @@ int main(void)
                     //arm_mean_f32(fftInData, FFT_SIZE*2, &meanVal);
 
                     // Measurement for time of processing with oscilloscope
-                    BSP_LED_Off(LED3);
+                    //BSP_LED_Off(LED3);
 
                     // Process data through FFT
                     float32_t maxVal[NR_OF_PEAKS];
@@ -366,7 +409,7 @@ int main(void)
                     float32_t peakData[NR_OF_PEAKS*2];
                     for ( s = 0 ; s < NR_OF_PEAKS; s++) {
                     	peakData[s*2] = maxVal[s];
-                    	peakData[s*2+1] = (float32_t)resIndex[s];
+                    	peakData[s*2+1] = (float32_t)(resIndex[s] * 1.0f);
                     }
                     floatArray2ByteArray(peakData, NR_OF_PEAKS*2);
                     //floatArray2ByteArray((float32_t)resIndex, NR_OF_PEAKS);
@@ -395,7 +438,7 @@ int main(void)
                 // Measurement for time of processing with oscilloscope
                 BSP_LED_Off(LED2);
                // Measurement for time of processing with oscilloscope
-                BSP_LED_Off(LED3);
+                //BSP_LED_Off(LED3);
 
                 // Debug output to verify interrupts
                 LOG("%lu interrupts since last time\n", interrupted, interrupted);
@@ -482,6 +525,18 @@ void SystemClock_Config(void)
 void DMA2_Stream0_IRQHandler(void)
 {
     HAL_DMA_IRQHandler(AdcAHandle.DMA_Handle);
+}
+
+/*
+ * This function handles interrupts for the Timer
+ */
+void TIM2_IRQHandler(void)
+{
+	HAL_TIM_IRQHandler(&TimerHandle);
+}
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  BSP_LED_Toggle(LED3);
 }
 
 /*

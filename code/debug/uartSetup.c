@@ -131,23 +131,24 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
  */
 void uartSend(char type, uint8_t* data, uint16_t dataSize)
 {
-    // Initialize the varibles used
+    // Initialize the variables used
     uint8_t unused = 0;
-    
-    // Calculate how many packets will be sent
-    // We should always send one packet unless size is 0
     uint16_t nrOfPackets;
-    if ( dataSize >= PACKET_SIZE ) {
+    int16_t restData;
+
+    // Calculate how many packets will be sent
+    if ( dataSize > 0 ) {
     	nrOfPackets = dataSize / PACKET_SIZE;
-    }
-    else if ( dataSize > 0 ){
-    	nrOfPackets = 1;
+    	// Find potential rest
+    	restData = dataSize - (nrOfPackets * PACKET_SIZE);
+    	if ( restData > 0 ) {
+    		// Add 1 packet to nrOfPackets
+    		nrOfPackets += 1;
+    	}
     }
     else {
-    	// Well shiet...Why are we here??
+    	return;
     }
-
-    //uint16_t prevIndex = 0;
 
     // Setup the packet
     uint16_t i = 0;
@@ -161,7 +162,6 @@ void uartSend(char type, uint8_t* data, uint16_t dataSize)
         HAL_UART_Transmit(&UartHandle, (uint8_t*)&unused, 1, 0xFFFF);
         // Sending the packet nr
         // This should be set to zero if there is only one packet to send
-        // How to do that?
         uint8_t tmp = i >> 8;
         HAL_UART_Transmit(&UartHandle, (uint8_t*)&(tmp), 1, 0xFFFF);
         if ( nrOfPackets == 1 ) {
@@ -171,30 +171,30 @@ void uartSend(char type, uint8_t* data, uint16_t dataSize)
         	tmp = i + 1;
         }
         HAL_UART_Transmit(&UartHandle, (uint8_t*)&tmp, 1, 0xFFFF);
+        // Sending the total size of the payload
         tmp = dataSize >> 8;
         HAL_UART_Transmit(&UartHandle, (uint8_t*)&(tmp), 1, 0xFFFF);
         HAL_UART_Transmit(&UartHandle, (uint8_t*)&dataSize, 1, 0xFFFF);
 
-        int16_t restData = dataSize - (i * PACKET_SIZE);
-//        if ( restData > PACKET_SIZE )
-//        {
-        	// Send the data
-//        	HAL_UART_Transmit(&UartHandle, (uint8_t*)(data + i*PACKET_SIZE), PACKET_SIZE, 0xFFFF);
-//        }
-//        else
-//        {
-//        	HAL_UART_Transmit(&UartHandle, (uint8_t*)(data + i*PACKET_SIZE), restData, 0xFFFF);
-//        }
+        // Calculate remaining data
+        restData = dataSize - (i * PACKET_SIZE);
 
-        // We want to loop, sending one byte at a time here
-        // How much data is left to send? Cause we always want to fill the payload with 256 bytes
+        // Loop, sending one byte at a time here
+        // If no more data exists, fill the rest of the bytes with zero
         int j = 0;
         for ( ; j < PACKET_SIZE ; j++)
         {
         	// We shall always send 256 bytes here
         	// How much is still available in buffer?
         	if ( restData > 0 ) {
+        		// Send the data
         		HAL_UART_Transmit(&UartHandle, (uint8_t*)(data + i*PACKET_SIZE + j), 1, 0xFFFF);
+
+        		// Check if we are in the last amount of data
+        		if ( restData < PACKET_SIZE ) {
+        			// Decrement restData
+        			restData--;
+        		}
         	}
         	else {
         		tmp = 0;

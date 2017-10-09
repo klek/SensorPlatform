@@ -21,9 +21,8 @@ hFigure = figure(10);
 hFigure.Visible = 'off';
 hFigure.Name = 'Sensorplatform';
 hFigure.Position = [360,500,750,585];
-%hFigure.MenuBar = 'none';
-%hFigure.ToolBar = 'none';
-%figure('Name', 'Sensorplatform', 'Visible', 'off', 'Position', [360,500,750,585]);
+hFigure.MenuBar = 'none';
+hFigure.ToolBar = 'none';
 
 % Get the handles
 handles = guihandles(hFigure);
@@ -197,7 +196,7 @@ function updatePlot(src, ~, hFigure)
         handles.message.newPeakData = 0;
         % Mark the peaks with data tips specified from the MCU
         % Indexes of peaks is every second slots
-        peakIndex = handles.message.payload.peakdata(2:2:end);
+        peakIndex = handles.message.payload.peakdata(2:2:end)
         % POTENTIAL PROBLEM HERE...THIRD AND FIFTH SLOT IS HALFED IN
         % VALUE???
 
