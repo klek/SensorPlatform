@@ -21,8 +21,8 @@ hFigure = figure(10);
 hFigure.Visible = 'off';
 hFigure.Name = 'Sensorplatform';
 hFigure.Position = [360,500,750,585];
-hFigure.MenuBar = 'none';
-hFigure.ToolBar = 'none';
+%hFigure.MenuBar = 'none';
+%hFigure.ToolBar = 'none';
 
 % Get the handles
 handles = guihandles(hFigure);
@@ -74,7 +74,7 @@ handles.timer = timer('ExecutionMode', 'fixedRate',...
 handles.serialButton = uicontrol('Style', 'pushbutton', ...
                     'String', 'Serial Connect', ...
                     'Position', [590,520,150,30], ...
-                    'Callback', {@serialButton_Callback,handles});
+                    'Callback', {@serialButton_Callback, hFigure});
 
 % Add button for plot
 handles.plot = uicontrol('Style', 'pushbutton', ...
@@ -121,6 +121,9 @@ handles.axis = axes('Units', 'pixels', 'Position', [60,50,500,485]);
 handles.figure.Units = 'normalized';
 handles.serialButton.Units = 'normalized';
 handles.plot.Units = 'normalized';
+handles.decimationText.Units = 'normalized';
+handles.decimationMenu.Units = 'normalized';
+handles.checkboxdatatips.Units = 'normalized';
 handles.axis.Units = 'normalized';
 
 % Center the GUI
@@ -227,9 +230,11 @@ function updatePlot(src, ~, hFigure)
     guidata(handles.figure, handles);
 end
 
-function serialButton_Callback(src,~,handles)
+function serialButton_Callback(src,~,hFigure)
+    % Get the figure data
+    handles = guidata(hFigure);
+
     % Check if connection is open
-    %if ( obj.Status == 'closed' )
     if ( strcmp(handles.serial.Status, 'closed') )
         % Open the serial connection
         fopen(handles.serial);
@@ -245,6 +250,9 @@ function serialButton_Callback(src,~,handles)
         % Change text for button
         src.String = 'Serial connect';
     end
+    
+    % Make sure we update the structure
+    guidata(handles.figure, handles);
 end
 
 function plotButtonCallback(src, ~, handles)
@@ -588,6 +596,7 @@ function serialConnectEventHandler(src, ~, hFigure)
     %handles.message.payload.spectrum
     %handles.message.head.nr
     %handles.message.prevIndex
+    %handles.message.payload.peakdata(2:2:end)
     
     % Store the data
     guidata(handles.figure, handles);

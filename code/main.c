@@ -64,7 +64,7 @@
 /* Private define ------------------------------------------------------------*/
 #define ADC_BUFFER_SIZE             (FFT_SIZE * 2)
 #define RING_BUFFER_SIZE            (FFT_SIZE)
-#define DECIMATION_FACTOR           TIME_DEC//1//16
+#define DECIMATION_FACTOR           16//TIME_DEC//1//16
 
 // Defines for the statusVector
 #define HALF_BUFFER_INT             (1 << 0)
@@ -73,7 +73,7 @@
 //#define TEST_BUTTER
 //#define TEST_ARCTAN
 //#define TEST_FFT
-#define TEST_WITH_FLOATS
+//#define TEST_WITH_FLOATS
 #define PRINT_PEAKS
 #define PRINT_SPECTRUM
 
@@ -211,7 +211,7 @@ int main(void)
     //timerSetup();
     __TIM2_CLK_ENABLE();
     TimerHandle.Instance = TIM2;
-    TimerHandle.Init.Period = (uint32_t)((SystemCoreClock/ 2) / TIMER_CLK_SPEED) - 1;
+    TimerHandle.Init.Period = (uint32_t)((SystemCoreClock/ 2) / TIMER_CLK_SPEED) - 1;	// Timer CLK is 2 * 54 MHz. Belongs to ABP1.
     TimerHandle.Init.Prescaler = 0;
     TimerHandle.Init.ClockDivision = 0; //TIM_CLOCKDIVISION_DIV1;
     TimerHandle.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -228,8 +228,8 @@ int main(void)
     {
     	LOG("ERROR: Failed to setup TRGO update\n");
     }
-//    HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
-//    HAL_NVIC_EnableIRQ(TIM2_IRQn);
+    //HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
+    //HAL_NVIC_EnableIRQ(TIM2_IRQn);
 
     /*
      * Setup the two ADCs
@@ -251,7 +251,7 @@ int main(void)
     //if ( HAL_TIM_Base_Start_IT(&TimerHandle) != HAL_OK )
     if ( HAL_TIM_Base_Start(&TimerHandle) != HAL_OK )
     {
-    	LOG("ERROR: Failer to start the timer!\n");
+    	LOG("ERROR: Failed to start the timer!\n");
     }
 
     /*
@@ -278,7 +278,10 @@ int main(void)
 
             // Move data from first half of adcBuffer into processing buffer inData
             // This will also center the data into the middle of the new buffer
-            //copyBuffers((uint32_t*)adcBuffer, (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+            // Measurement for time of processing with oscilloscope
+//            BSP_LED_On(LED1);
+            copyBuffers((uint32_t*)adcBuffer, (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+//            BSP_LED_Off(LED1);
 
             // Copy the test signal from the testbench
             //copyBuffers((testBenchSignal + curIndex), inData, (uint32_t)ADC_BUFFER_SIZE);
@@ -297,7 +300,10 @@ int main(void)
             statusVector &= ~FULL_BUFFER_INT;
 
             // Move last half of adcBuffer into processing buffer inData
-            //copyBuffers((uint32_t*)(adcBuffer + (ADC_BUFFER_SIZE/2)), (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+            // Measurement for time of processing with oscilloscope
+//            BSP_LED_On(LED1);
+            copyBuffers((uint32_t*)(adcBuffer + (ADC_BUFFER_SIZE/2)), (float32_t*)inData, (uint32_t)ADC_BUFFER_SIZE);
+//            BSP_LED_Off(LED1);
 
             // Copy the test signal from the testbench
             //copyBuffers((testBenchSignal + curIndex), inData, (uint32_t)ADC_BUFFER_SIZE);
@@ -310,12 +316,13 @@ int main(void)
         }
         else
         {
-            // Measurement for time of processing with oscilloscope
-            BSP_LED_On(LED2);
-
             // Here we process data
             if ( newData == 1 ) {
                 newData = 0;
+
+                // Measurement for time of processing with oscilloscope
+//                BSP_LED_On(LED1);
+
 
 #ifdef TEST_BUTTER
                 memcpy(inData, superPosSignal, ((FFT_SIZE * 2) * sizeof(float32_t)) );
@@ -324,7 +331,10 @@ int main(void)
                 // inData contains the new sampled data
                 // This data needs to be filtered and decimated since we are looking for very low frequencies.
                 uint32_t validItems = 0;
+                // Time measurement
+//                BSP_LED_On(LED1);
                 validItems = filterAndDecimate(inData, ADC_BUFFER_SIZE, DECIMATION_FACTOR);
+//                BSP_LED_Off(LED1);
 
 #ifdef TEST_BUTTER
                 // Should move this debugging into main-file
@@ -356,9 +366,11 @@ int main(void)
                 memcpy(inData, phaseShiftSignal, ((FFT_SIZE * 2) * sizeof(float32_t)) );
 #endif
 
+                // Time measurement
+//                BSP_LED_On(LED1);
                 // Calculating the phase for the incoming data
 //                phaseCalc((float32_t*)inData, validItems);
-
+//                BSP_LED_Off(LED1);
 
                 // Updating the ring buffer with new values
                 circMultiPush(&workData, (struct complexData *)inData, validItems/2);
@@ -386,19 +398,22 @@ int main(void)
                     //float32_t meanVal = 0.0f;
                     //arm_mean_f32(fftInData, FFT_SIZE*2, &meanVal);
 
-                    // Measurement for time of processing with oscilloscope
-                    //BSP_LED_Off(LED3);
-
                     // Process data through FFT
                     float32_t maxVal[NR_OF_PEAKS];
                     uint32_t resIndex[NR_OF_PEAKS];
+
+                    // Time measurement
+//                    BSP_LED_On(LED1);
                     fftProcess(fftInData, fftResult, maxVal, resIndex);
+//                    BSP_LED_Off(LED1);
 
 #ifdef PRINT_PEAKS
                     /*
                      * Debugging
                      * Print the result to debugging terminal for capture in MATLAB
                      */
+                    // Measurement for time of processing with oscilloscope
+//                    BSP_LED_On(LED1);
                     int s = 0;
 //                    for (s = 0; s < NR_OF_PEAKS; s++)
 //                    {
@@ -412,9 +427,10 @@ int main(void)
                     	peakData[s*2+1] = (float32_t)(resIndex[s] * 1.0f);
                     }
                     floatArray2ByteArray(peakData, NR_OF_PEAKS*2);
-                    //floatArray2ByteArray((float32_t)resIndex, NR_OF_PEAKS);
-                    uartSend((char)'C', (uint8_t*)peakData, ((NR_OF_PEAKS*2)*sizeof(maxVal[0])));
-                    //uartSend((char)'C', (uint8_t*)resIndex, ((NR_OF_PEAKS)*sizeof(maxVal[0])));
+                    // Measurement for time of processing with oscilloscope
+//                    BSP_LED_On(LED1);
+                    uartSend((char)'C', (uint8_t*)peakData, ((NR_OF_PEAKS*2)*sizeof(peakData[0])));
+//                    BSP_LED_Off(LED1);
 #endif
 
 #ifdef PRINT_SPECTRUM
@@ -422,6 +438,8 @@ int main(void)
                      * Debugging
                      * Print the result to debugging terminal for capture in MATLAB
                      */
+                    // Measurement for time of processing with oscilloscope
+//                    BSP_LED_On(LED1);
 //                    s = 0;
 //                    LOG("[ %f; %f", fftResult[s], fftResult[s+1]);
 //                    s += 2;
@@ -432,13 +450,14 @@ int main(void)
 //                    }
 //                    LOG(" ]; \n");
                     floatArray2ByteArray(fftResult, FFT_SIZE/2);
+                    // Measurement for time of processing with oscilloscope
+//                    BSP_LED_On(LED1);
                     uartSend((char)'B',(uint8_t*)fftResult, ((FFT_SIZE/2)*sizeof(fftResult[0])));
+//                    BSP_LED_Off(LED1);
 #endif
                 }
                 // Measurement for time of processing with oscilloscope
-                BSP_LED_Off(LED2);
-               // Measurement for time of processing with oscilloscope
-                //BSP_LED_Off(LED3);
+//                BSP_LED_Off(LED1);
 
                 // Debug output to verify interrupts
                 LOG("%lu interrupts since last time\n", interrupted, interrupted);
@@ -598,7 +617,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
         //BSP_LED_On(LED3);
     }
     /* Turn LED1 on: Transfer process is correct */
-    BSP_LED_Off(LED1);
+//    BSP_LED_Off(LED1);
 }
 
 /**
@@ -638,7 +657,7 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* AdcHandle)
         //BSP_LED_On(LED3);
     }
     /* Turn LED1 on: Transfer process is correct */
-    BSP_LED_On(LED1);
+//    BSP_LED_On(LED1);
 }
 
 

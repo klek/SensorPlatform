@@ -225,7 +225,8 @@ arm_status fftProcess(float32_t* data, float32_t* result, float32_t* maxValue, u
 	for (s = 0; s < NR_OF_LOW_BINS; s++)
 	{
 		// Do some magic with low bins here!
-		result[s] = result[s] * 0.5;
+		//result[s] = result[s] * 0.5;
+		result[s] = 0.0f;
 	}
 
 
