@@ -46,12 +46,6 @@
 //#include "ethernet/ethernetSetup.h"
 
 
-// Includes for testing purposes
-#include "../testing/superPosSignal.h"
-//#include "../testing/phaseShiftSignal.h"
-#include "../testing/testbench.h"
-#include "../testing/testbench_floats.h"
-
 /** @addtogroup STM32F7xx_HAL_Examples
   * @{
   */
@@ -62,7 +56,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define ADC_BUFFER_SIZE             (FFT_SIZE * 2)
+#define ADC_BUFFER_SIZE             (FFT_SIZE)// * 2)
 #define RING_BUFFER_SIZE            (FFT_SIZE)
 #define DECIMATION_FACTOR           16//TIME_DEC//1//16
 
@@ -101,11 +95,20 @@ uint32_t adcBuffer[ADC_BUFFER_SIZE];
 // Defining a global status vector
 uint32_t statusVector = 0;
 
+
+// Includes for testing purposes
+//#include "../testing/superPosSignal.h"
+//#include "../testing/phaseShiftSignal.h"
+//#include "../testing/testbench.h"
+//#include "../testing/testbench_floats.h"
+
+
+
 // Defining variables used for testing/debugging
 uint32_t interrupted = 0;
 uint32_t curIndex = 0;
-static const int testBenchLength = sizeof(testBenchSignal) / sizeof(testBenchSignal[0]);
-
+//static const int testBenchLength = sizeof(testBenchSignal) / sizeof(testBenchSignal[0]);
+//static const int testBenchLength = sizeof(testBenchSignal_floats) / sizeof(testBenchSignal_floats[0]);
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -600,11 +603,11 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
 #ifdef TEST_WITH_FLOATS
         curIndex += ADC_BUFFER_SIZE;
 #else
-        curIndex += ADC_BUFFER_SIZE / 2;
+        //curIndex += ADC_BUFFER_SIZE / 2;
 #endif
-        if ( curIndex >= testBenchLength ) {
-            curIndex = 0;
-        }
+//        if ( curIndex >= testBenchLength ) {
+//            curIndex = 0;
+//        }
 
         interrupted++;
     }
@@ -640,11 +643,11 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* AdcHandle)
 #ifdef TEST_WITH_FLOATS
         curIndex += ADC_BUFFER_SIZE;
 #else
-        curIndex += ADC_BUFFER_SIZE / 2;
+        //curIndex += ADC_BUFFER_SIZE / 2;
 #endif
-        if ( curIndex >= testBenchLength ) {
-            curIndex = 0;
-        }
+//        if ( curIndex >= testBenchLength ) {
+//            curIndex = 0;
+//        }
 
         interrupted++;
     }

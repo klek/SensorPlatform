@@ -51,12 +51,17 @@
 void copyBuffers(uint32_t* inData, float32_t* outData, uint32_t sizeOfOutData)
 {
 	int i = 0;
-	for ( ; i < sizeOfOutData ; i += 2)
+	int j = 0;
+	// Iterate over the smaller vector
+	for ( ; i < (sizeOfOutData / 2) ; i++)
 	{
-		// Copy I_DATA into first slot of outData
-		outData[i] = ( (float32_t)( inData[i] & I_DATA_POS ) );//- 2048.0f );
-		// Copy Q_DATA into second slot of outData, shift it down as well
-		outData[i + 1] = (float32_t)( (float32_t)(( inData[i] & Q_DATA_POS ) >> 16 ) );//- 2048.0f );
+		// Check boundary of the large vector
+		if ( j < sizeOfOutData ) {
+			// Copy I_DATA into first slot of outData
+			outData[j++] = ( (float32_t)( inData[i] & I_DATA_POS ) );//- 2048.0f );
+			// Copy Q_DATA into second slot of outData, shift it down as well
+			outData[j++] = (float32_t)( (float32_t)(( inData[i] & Q_DATA_POS ) >> 16 ) );//- 2048.0f );
+		}
 	}
 }
 
@@ -71,6 +76,7 @@ void copyBuffers(uint32_t* inData, float32_t* outData, uint32_t sizeOfOutData)
 uint32_t filterAndDecimate(float32_t* data, uint32_t dataSize, uint16_t decFactor)
 {
 	// Initialization of local variables
+	// TODO(klek): BUG!! Hard-coded size of the filterData vector!!
 	float32_t filterData[FFT_SIZE * 2];
 	float32_t stateBuffer[2 * N_STAGES];
 
@@ -226,7 +232,7 @@ arm_status fftProcess(float32_t* data, float32_t* result, float32_t* maxValue, u
 	{
 		// Do some magic with low bins here!
 		//result[s] = result[s] * 0.5;
-		result[s] = 0.0f;
+		//result[s] = 0.0f;
 	}
 
 

@@ -20,7 +20,7 @@ outputFile = fopen('../testing/output/output.txt', 'wt');
 hFigure = figure(10);
 hFigure.Visible = 'off';
 hFigure.Name = 'Sensorplatform';
-hFigure.Position = [360,500,750,585];
+hFigure.Position = [360,500,800,600];
 %hFigure.MenuBar = 'none';
 %hFigure.ToolBar = 'none';
 
@@ -54,7 +54,7 @@ hSerial.Parity = 'odd';
 hSerial.StopBits = 1;
 hSerial.DataBits = 7;
 hSerial.Timeout = 10;
-hSerial.InputBufferSize = 2048;     % This should be larger than needed
+hSerial.InputBufferSize = 4096;     % This should be larger than needed
 
 % Configure the callback
 hSerial.BytesAvailableFcnMode = 'byte';%'terminator';
@@ -73,31 +73,31 @@ handles.timer = timer('ExecutionMode', 'fixedRate',...
 % Add button for connecting to the serial
 handles.serialButton = uicontrol('Style', 'pushbutton', ...
                     'String', 'Serial Connect', ...
-                    'Position', [590,520,150,30], ...
+                    'Position', [615,520,150,30], ...
                     'Callback', {@serialButton_Callback, hFigure});
 
 % Add button for plot
 handles.plot = uicontrol('Style', 'pushbutton', ...
                     'String', 'Plot', ...
-                    'Position', [590,480,150,30], ...
+                    'Position', [615,480,150,30], ...
                     'Callback', {@plotButtonCallback, handles});
 
 % Adding a drop-down menu, to choose decimation from
 handles.decimationText = uicontrol('Style', 'text', ...
                     'String', 'Decimation', ...
-                    'Position', [590,420,150,30]);
+                    'Position', [615,420,150,30]);
 handles.decimationMenu = uicontrol('Style', 'popupmenu', ...
                     'String', {'1','2','4','8','16'}, ...
-                    'Position', [590,400,150,30], ...
+                    'Position', [615,400,150,30], ...
                     'Callback', {@decimationCallback, hFigure});
 
 % Adding a check-box, to choose to print datatips or not
 %handles.decimationText = uicontrol('Style', 'text', ...
 %                    'String', 'Decimation', ...
-%                    'Position', [590,420,150,30]);
+%                    'Position', [615,420,150,30]);
 handles.checkboxdatatips = uicontrol('Style', 'checkbox', ...
                     'String', 'Show datatips', ...
-                    'Position', [590,370,150,30], ...
+                    'Position', [615,370,150,30], ...
                     'Callback', {@checkboxCallback, hFigure});
 % Don't show datatips per default
 handles.datatips.show = 0;
@@ -113,7 +113,7 @@ handles.datatips.show = 0;
 
                 
 % Add axis for the plot
-handles.axis = axes('Units', 'pixels', 'Position', [60,50,500,485]);
+handles.axis = axes('Units', 'pixels', 'Position', [85,65,500,485]);
 
 % Add a menu to choose which data that should be used if subplot is used
 
@@ -171,8 +171,8 @@ function updatePlot(src, ~, hFigure)
         %fprintf('The data received %f\n', handles.message.prevIndex);
         
         % Create the frequency vector
-        sigLen = length(handles.message.payload.spectrum);
-        resolution = (handles.fft.sampleRate / handles.fft.decimation) / handles.fft.fftLength;
+        sigLen = length(handles.message.payload.spectrum)
+        resolution = (handles.fft.sampleRate / handles.fft.decimation) / handles.fft.fftLength
         f = 0:resolution:((sigLen - 1)*resolution);
         
         % Plot the new data
@@ -181,7 +181,7 @@ function updatePlot(src, ~, hFigure)
         handles.plot = hPlot;
         title('Frequency spectrum of vital signs');
         xlabel('Frequency [Hz]');
-        ylabel('Magnitude [V]');
+        ylabel('Magnitude [mV]');
         %axis([-100 1050 0 (max(handles.message.payload.spectrum) + 0.1)])
         
         % Indicate new datatips should be drawn
@@ -199,7 +199,7 @@ function updatePlot(src, ~, hFigure)
         handles.message.newPeakData = 0;
         % Mark the peaks with data tips specified from the MCU
         % Indexes of peaks is every second slots
-        peakIndex = handles.message.payload.peakdata(2:2:end)
+        peakIndex = handles.message.payload.peakdata(2:2:end);
         % POTENTIAL PROBLEM HERE...THIRD AND FIFTH SLOT IS HALFED IN
         % VALUE???
 
@@ -216,13 +216,18 @@ function updatePlot(src, ~, hFigure)
         % Should we draw datatips?
         if ( handles.datatips.show == 1 && drawDatatip == 1 )
             % Only mark the two highest peaks
-            peakIndex = [peakIndex(1) peakIndex(2)];
+            %peakIndex = [peakIndex(1) peakIndex(2)]
+            if ( peakIndex(1) == peakIndex(2) )
+                peakIndex = [peakIndex(1) peakIndex(3)]
+            else
+                peakIndex = [peakIndex(1) peakIndex(2)]
+            end
             % Mark the peaks in the plot
             makedatatip(hPlot, peakIndex);
         end
         
         % Remove the peak data
-        handles.message.payload.peakdata = 0;
+        %handles.message.payload.peakdata = 0;
     end
     
     
@@ -580,7 +585,8 @@ function serialConnectEventHandler(src, ~, hFigure)
                 % Starting at slot 7
                 for i = 1:(handles.message.head.size/4);
                     slot = (i - 1) * 4;
-                    handles.message.payload.peakdata(i) = unpackFloat([out(7+slot) out(8+slot) out(9+slot) out(10+slot)]);
+                    testVal = unpackFloat([out(7+slot) out(8+slot) out(9+slot) out(10+slot)]);
+                    handles.message.payload.peakdata(i) = testVal;%unpackFloat([out(7+slot) out(8+slot) out(9+slot) out(10+slot)])
                 end
             end
             

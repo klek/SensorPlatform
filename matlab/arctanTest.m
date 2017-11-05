@@ -27,7 +27,7 @@ for i = 1:length(x_param)
     homemade_result2(i) = atan2TaylorApprox(y_param(i),x_param(i));
 end
 
-% Create valus for the UNIT circle
+% Create values for the UNIT circle
 theta = linspace(-4*pi, 4*pi, 8000);
 y = sin(theta);
 x = cos(theta);
@@ -60,7 +60,7 @@ axis([0.65 1.1 0.6 1])
 
 figure(3)
 plot(t, ref_result, t, homemade_result2, '--', t, homemade_result1(:,3), '--')
-legend('atan2', 'Taylor O(4)', 'TaylorApprox', 'Location', 'northwest')
+legend('atan2', 'TaylorApprox', 'Taylor O(4)', 'Location', 'northwest')
 title('Comparison of atan2 to Taylor expansion and Taylor approximation')
 xlabel('t')
 ylabel('phi [rad]')
@@ -70,5 +70,7 @@ figure(4)
 plot(theta, ref_result_unit, theta, homemade_result_unit, '--')
 legend('atan2', 'TaylorApprox')
 title('Comparing arctan implementations')
+xlabel('t')
+ylabel('phi [rad]')
 
 end
