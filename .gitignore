@@ -101,7 +101,7 @@ Debug
 .cproject
 .settings
 .launches
-.project
+#.project
 
 # Specific to this project
 LinkerScript.ld
